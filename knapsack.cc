@@ -2,6 +2,7 @@
 
 #include <assert.h>
 
+#include <cmath>
 #include <iostream>
 #include <tuple>
 
@@ -40,6 +41,7 @@ std::ostream& operator<<(std::ostream& stream,
 KnapsackSolution SolveKnapsack(absl::Span<const double> obj_values,
                                absl::Span<const double> weights, double rhs,
                                double eps, double best_bound) {
+  assert(std::isfinite(rhs));
   assert(obj_values.size() == weights.size());
   assert(eps >= 0);
   for (double weight : weights) {
@@ -52,6 +54,8 @@ KnapsackSolution SolveKnapsack(absl::Span<const double> obj_values,
   // The weights are negative, so the goal is to exclude items.
   NormalizedInstance knapsack = NormalizeKnapsack(obj_values, weights);
 
+  assert(std::isfinite(knapsack.sum_candidate_weights));
+
   // If we don't remove anything, the sum of weights is
   // knapsack.sum_candidate_values.
   // The maximum weight increase incurred by removing items is
@@ -60,6 +64,8 @@ KnapsackSolution SolveKnapsack(absl::Span<const double> obj_values,
     ret.feasible = false;
     return ret;
   }
+
+  assert(max_weight_increase >= -eps);
 
   const double weight_fudge_value = std::max(-max_weight_increase, 0.0);
   max_weight_increase += weight_fudge_value;
