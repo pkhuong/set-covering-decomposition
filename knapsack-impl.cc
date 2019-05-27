@@ -15,23 +15,24 @@ bool NormalizedEntry::operator==(const NormalizedEntry& other) const {
 }
 
 NormalizedInstance NormalizeKnapsack(absl::Span<const double> obj_values,
-                                     absl::Span<const double> weights) {
-  NormalizedInstance ret;
-
+                                     absl::Span<const double> weights,
+                                     absl::Span<double> candidates) {
   assert(obj_values.size() == weights.size());
-  ret.candidate_indices.reserve(obj_values.size());
-  ret.to_exclude.reserve(obj_values.size());
+  assert(obj_values.size() == candidates.size());
 
+  NormalizedInstance ret;
+  ret.to_exclude.reserve(obj_values.size());
   for (size_t i = 0, n = obj_values.size(); i < n; ++i) {
     const double weight = weights[i];
     const double value = -obj_values[i];  // flip for max
 
     assert(weight <= 0);
     if (weight == 0 && value < 0) {
+      candidates[i] = 0.0;
       continue;
     }
 
-    ret.candidate_indices.push_back(i);
+    candidates[i] = 1.0;
     ret.sum_candidate_values += value;
     ret.sum_candidate_weights += weight;
 

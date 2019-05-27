@@ -61,10 +61,10 @@ KnapsackSolution SolveKnapsack(absl::Span<const double> obj_values,
 
   KnapsackSolution ret(std::move(scratch));
   ret.solution.resize(weights.size());
-  std::fill(ret.solution.begin(), ret.solution.end(), 0);
   // We obtain a regular max / <= knapsack by flipping the objective function.
   // The weights are negative, so the goal is to exclude items.
-  NormalizedInstance knapsack = NormalizeKnapsack(obj_values, weights);
+  NormalizedInstance knapsack =
+      NormalizeKnapsack(obj_values, weights, absl::MakeSpan(ret.solution));
 
   assert(std::isfinite(knapsack.sum_candidate_weights));
 
@@ -107,10 +107,6 @@ KnapsackSolution SolveKnapsack(absl::Span<const double> obj_values,
       PartitionEntries(PartitionInstance(absl::MakeSpan(knapsack.to_exclude),
                                          /*max_weight_=*/max_weight_increase,
                                          /*max_value_=*/max_value_increase));
-
-  for (size_t i : knapsack.candidate_indices) {
-    ret.solution[i] = 1;
-  }
 
   for (const auto& elem : absl::MakeConstSpan(knapsack.to_exclude)
                               .subspan(0, partition.partition_index)) {

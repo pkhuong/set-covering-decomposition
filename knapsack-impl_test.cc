@@ -8,6 +8,7 @@
 namespace internal {
 namespace {
 using ::testing::AnyOf;
+using ::testing::ElementsAre;
 using ::testing::Range;
 using ::testing::TestWithParam;
 using ::testing::UnorderedElementsAre;
@@ -17,9 +18,11 @@ TEST(NormalizeInstance, Trivial) {
   // min / <=
   const std::vector<double> obj_values = {1, 2};
   const std::vector<double> weights = {-1, -2};
+  std::vector<double> candidates(2, -1.0);
 
-  const NormalizedInstance ret = NormalizeKnapsack(obj_values, weights);
-  EXPECT_THAT(ret.candidate_indices, UnorderedElementsAre(0, 1));
+  const NormalizedInstance ret =
+      NormalizeKnapsack(obj_values, weights, absl::MakeSpan(candidates));
+  EXPECT_THAT(candidates, ElementsAre(1.0, 1.0));
   EXPECT_THAT(ret.to_exclude, UnorderedElementsAre(NormalizedEntry{1, 1, 0},
                                                    NormalizedEntry{2, 2, 1}));
   EXPECT_EQ(ret.sum_candidate_values, -3);
@@ -30,6 +33,7 @@ TEST(NormalizeInstance, AllCases) {
   // weights are non-positive. values are arbitrary.
   const std::vector<double> obj_values = {-1, 0, 1, -1, 0, 1};
   const std::vector<double> weights = {0, 0, 0, -1, -2, -3};
+  std::vector<double> candidates(6, 42.0);
 
   // In a min / <= knapsack...
   // element 0 (-1, 0) is always taken.
@@ -44,8 +48,9 @@ TEST(NormalizeInstance, AllCases) {
   //
   // element 5 (1, -3) is unknown
 
-  const NormalizedInstance ret = NormalizeKnapsack(obj_values, weights);
-  EXPECT_THAT(ret.candidate_indices, UnorderedElementsAre(0, 1, 3, 4, 5));
+  const NormalizedInstance ret =
+      NormalizeKnapsack(obj_values, weights, absl::MakeSpan(candidates));
+  EXPECT_THAT(candidates, ElementsAre(1.0, 1.0, 0.0, 1.0, 1.0, 1.0));
   EXPECT_THAT(ret.to_exclude, UnorderedElementsAre(NormalizedEntry{3, 1, 5}));
 
   // If we pick element 5, the real solution is {0, 1, 3, 4}, with

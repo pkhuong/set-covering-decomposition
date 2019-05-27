@@ -18,7 +18,6 @@ struct NormalizedEntry {
 };
 
 struct NormalizedInstance {
-  std::vector<size_t> candidate_indices;
   std::vector<NormalizedEntry> to_exclude;
   double sum_candidate_values{0};
   double sum_candidate_weights{0};
@@ -30,8 +29,13 @@ struct NormalizedInstance {
 // Then handles the negative weights by flipping the decision variables'
 // meanings.
 // The normalized knapsack subproblem will select variables to exclude.
+//
+// candidates must have the same size as `obj_values` and `weights`, and
+// will be initialised to 1 for entries that are initially assumed in the
+// knapsack, and 0 for entries that are rejected off hand.
 NormalizedInstance NormalizeKnapsack(absl::Span<const double> obj_values,
-                                     absl::Span<const double> weights);
+                                     absl::Span<const double> weights,
+                                     absl::Span<double> candidates);
 
 struct PartitionResult {
   size_t partition_index;
