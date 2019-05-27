@@ -1,6 +1,7 @@
 #include "driver.h"
 
 #include <cmath>
+#include <limits>
 
 #include "cover-constraint.h"
 #include "knapsack.h"
@@ -35,8 +36,11 @@ void dxpy(absl::Span<const double> src, absl::Span<double> acc) {
 PrepareWeightsState PrepareAllWeights(absl::Span<CoverConstraint> constraints,
                                       const DriverState& state) {
   // Step size.
-  const double eta = std::log(std::max<size_t>(2, state.prev_num_non_zero)) /
-                     state.sum_mix_gap;
+  double eta = std::numeric_limits<double>::infinity();
+  if (state.sum_mix_gap > 0) {
+    eta = std::log(std::max<size_t>(2, state.prev_num_non_zero)) /
+          state.sum_mix_gap;
+  }
 
   PrepareWeightsState ret(state.obj_values.size(), state.prev_min_loss, eta);
   for (auto& constraint : constraints) {
