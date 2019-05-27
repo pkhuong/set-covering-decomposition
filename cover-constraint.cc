@@ -89,9 +89,7 @@ void CoverConstraint::PrepareWeights(PrepareWeightsState* state) {
     return;
   }
 
-  PopulateWeights(state->mix_loss.eta, state->mix_loss.min_loss, &scratch);
-  state->mix_loss.num_weights += scratch.size();
-  state->mix_loss.sum_weights += dsum(scratch);
+  PopulateWeights(&state->mix_loss, &scratch);
   state->knapsack_rhs -= SolveSubproblem(scratch);
 
   assert(state->knapsack_weights.size() > potential_tours_.back());
@@ -122,12 +120,10 @@ void CoverConstraint::UpdateMixLoss(UpdateMixLossState* state) const {
     return;
   }
 
-  PopulateWeights(state->mix_loss.eta, state->mix_loss.min_loss, &scratch);
-  state->mix_loss.num_weights += scratch.size();
-  state->mix_loss.sum_weights += dsum(scratch);
+  PopulateWeights(&state->mix_loss, &scratch);
 }
 
-void CoverConstraint::PopulateWeights(double eta, double min_loss,
+void CoverConstraint::PopulateWeights(MixLossInfo* info,
                                       std::vector<double>* weights) const {
   // Ensure geometric growth works despite repeated `resize` calls.
   if (potential_tours_.size() > weights->capacity()) {
@@ -136,18 +132,20 @@ void CoverConstraint::PopulateWeights(double eta, double min_loss,
   }
 
   weights->resize(potential_tours_.size());
+  const double eta = info->eta;
+  const double min_loss = info->min_loss;
   if (std::isinf(eta)) {
     for (size_t i = 0, n = loss_.size(); i < n; ++i) {
       (*weights)[i] = (loss_[i] == min_loss) ? 1.0 : 0.0;
     }
-
-    return;
+  } else {
+    for (size_t i = 0, n = loss_.size(); i < n; ++i) {
+      (*weights)[i] = std::exp(-eta * (loss_[i] - min_loss));
+    }
   }
 
-  // XXX: vectorize.
-  for (size_t i = 0, n = loss_.size(); i < n; ++i) {
-    (*weights)[i] = std::exp(-eta * (loss_[i] - min_loss));
-  }
+  info->num_weights += weights->size();
+  info->sum_weights += dsum(*weights);
 }
 
 // The weight vector is never empty nor negative, so we're looking for (any)

@@ -91,8 +91,9 @@ class CoverConstraint {
   absl::Span<const double> loss() const { return loss_; }
 
  private:
-  void PopulateWeights(double eta, double min_loss,
-                       std::vector<double>* weights) const;
+  // Populates `weights` with the un-normalised weights for this iteration, and
+  // updates the accumulators in `info`.
+  void PopulateWeights(MixLossInfo* info, std::vector<double>* weights) const;
 
   // Finds the min weight solution to this covering constraint, and
   // stores it in `last_solution`.
