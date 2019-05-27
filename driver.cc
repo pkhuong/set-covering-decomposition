@@ -74,9 +74,13 @@ double ComputeTargetObjectiveValue(const DriverState& state) {
 double UpdateStateWithNewRelaxedSolution(
     const PrepareWeightsState& prepare_weights, DriverState* state) {
   const double target_objective_value = ComputeTargetObjectiveValue(*state);
+
+  // Borrow storage for the solution, and move it back into place
+  // before returning.
   KnapsackSolution master_sol =
       SolveKnapsack(state->obj_values, prepare_weights.knapsack_weights,
-                    prepare_weights.knapsack_rhs, kEps, target_objective_value);
+                    prepare_weights.knapsack_rhs, kEps, target_objective_value,
+                    std::move(state->last_solution));
 
   dxpy(master_sol.solution, absl::MakeSpan(state->sum_solutions));
   state->sum_solution_value += master_sol.objective_value;

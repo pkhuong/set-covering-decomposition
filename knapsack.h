@@ -9,11 +9,7 @@
 struct KnapsackSolution {
   explicit KnapsackSolution(std::vector<double> solution_ = {},
                             double objective_value_ = 0,
-                            double feasibility_ = 0, bool feasible_ = false)
-      : solution(std::move(solution_)),
-        objective_value(objective_value_),
-        feasibility(feasibility_),
-        feasible(feasible_) {}
+                            double feasibility_ = 0, bool feasible_ = false);
 
   bool operator==(const KnapsackSolution& other) const;
   friend std::ostream& operator<<(std::ostream& stream,
@@ -38,7 +34,10 @@ struct KnapsackSolution {
 // we hit `best_bound` and instead return a "more feasible" solution.
 //
 // eps is the allowed leeway on feasibility.
+//
+// `scratch` is used to pre-allocate the solution vector in the return value.
 KnapsackSolution SolveKnapsack(absl::Span<const double> obj_values,
                                absl::Span<const double> weights, double rhs,
-                               double eps, double best_bound);
+                               double eps, double best_bound,
+                               std::vector<double> scratch = {});
 #endif /* !KNAPSACK_H */

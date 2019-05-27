@@ -2,6 +2,7 @@
 
 #include <assert.h>
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <tuple>
@@ -14,6 +15,14 @@ using ::internal::NormalizeKnapsack;
 using ::internal::PartitionInstance;
 using ::internal::PartitionResult;
 using ::internal::PartitionEntries;
+
+KnapsackSolution::KnapsackSolution(std::vector<double> solution_,
+                                   double objective_value_, double feasibility_,
+                                   bool feasible_)
+    : solution(std::move(solution_)),
+      objective_value(objective_value_),
+      feasibility(feasibility_),
+      feasible(feasible_) {}
 
 bool KnapsackSolution::operator==(const KnapsackSolution& other) const {
   return std::tie(solution, objective_value, feasibility, feasible) ==
@@ -40,7 +49,8 @@ std::ostream& operator<<(std::ostream& stream,
 // the knapsack.
 KnapsackSolution SolveKnapsack(absl::Span<const double> obj_values,
                                absl::Span<const double> weights, double rhs,
-                               double eps, double best_bound) {
+                               double eps, double best_bound,
+                               std::vector<double> scratch) {
   assert(std::isfinite(rhs));
   assert(obj_values.size() == weights.size());
   assert(eps >= 0);
@@ -49,7 +59,9 @@ KnapsackSolution SolveKnapsack(absl::Span<const double> obj_values,
     assert(weight <= 0);
   }
 
-  KnapsackSolution ret;
+  KnapsackSolution ret(std::move(scratch));
+  ret.solution.resize(weights.size());
+  std::fill(ret.solution.begin(), ret.solution.end(), 0);
   // We obtain a regular max / <= knapsack by flipping the objective function.
   // The weights are negative, so the goal is to exclude items.
   NormalizedInstance knapsack = NormalizeKnapsack(obj_values, weights);
@@ -61,6 +73,7 @@ KnapsackSolution SolveKnapsack(absl::Span<const double> obj_values,
   // The maximum weight increase incurred by removing items is
   double max_weight_increase = rhs - knapsack.sum_candidate_weights;
   if (max_weight_increase < -eps) {
+    ret.solution.clear();
     ret.feasible = false;
     return ret;
   }
@@ -95,7 +108,6 @@ KnapsackSolution SolveKnapsack(absl::Span<const double> obj_values,
                                          /*max_weight_=*/max_weight_increase,
                                          /*max_value_=*/max_value_increase));
 
-  ret.solution.resize(weights.size(), 0);
   for (size_t i : knapsack.candidate_indices) {
     ret.solution[i] = 1;
   }
