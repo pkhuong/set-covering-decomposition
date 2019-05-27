@@ -29,7 +29,7 @@ struct PrepareWeightsState {
   std::vector<double> scratch;
 
   absl::FixedArray<double, 0> knapsack_weights;
-  double knapsack_rhs;
+  double knapsack_rhs{0};
 
   void Merge(const PrepareWeightsState& in);
 };
