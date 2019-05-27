@@ -49,6 +49,22 @@ PrepareWeightsState PrepareAllWeights(absl::Span<CoverConstraint> constraints,
 
   return ret;
 }
+
+double ComputeTargetObjectiveValue(const DriverState& state) {
+  const double best_bound = state.best_bound;
+  const double sum_value = state.sum_solution_value;
+
+  assert(std::isfinite(best_bound));
+  assert(std::isfinite(sum_value));
+
+  double sum_best_bound = best_bound * (state.num_iterations + 1);
+  assert(sum_best_bound + kEps >= sum_value);
+  sum_best_bound = std::max(sum_best_bound, sum_value);
+  // If the objective value hits target_objective_value, the new sum
+  // of solution values will yield an average of exactly
+  // state->best_bound.
+  return sum_best_bound - sum_value;
+}
 }  // namespace
 
 DriverState::DriverState(absl::Span<const double> obj_values_in)
@@ -60,21 +76,8 @@ void DriveOneIteration(absl::Span<CoverConstraint> constraints,
                        DriverState* state) {
   const PrepareWeightsState prepare_weights =
       PrepareAllWeights(constraints, *state);
-
   const double prev_mix_loss = ComputeMixLoss(prepare_weights.mix_loss);
-
-  double target_objective_value = state->best_bound;
-  if (std::isfinite(state->best_bound)) {
-    double sum_best_bound = state->best_bound * (state->num_iterations + 1);
-    const double sum_value = state->sum_solution_value;
-
-    assert(sum_best_bound + kEps >= sum_value);
-    sum_best_bound = std::max(sum_best_bound, sum_value);
-    // If the objective value hits target_objective_value, the new sum
-    // of solution values will yield an average of exactly
-    // state->best_bound.
-    target_objective_value = sum_best_bound - sum_value;
-  }
+  const double target_objective_value = ComputeTargetObjectiveValue(*state);
 
   KnapsackSolution master_sol =
       SolveKnapsack(state->obj_values, prepare_weights.knapsack_weights,
