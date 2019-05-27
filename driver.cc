@@ -65,6 +65,58 @@ double ComputeTargetObjectiveValue(const DriverState& state) {
   // state->best_bound.
   return sum_best_bound - sum_value;
 }
+
+// Updates all the counters related to the master knapsack solutions,
+// and returns the observed loss (rescaled for probabilities).
+//
+// Stores the master solution in `state->last_solution`
+double UpdateStateForNewRelaxedSolution(
+    KnapsackSolution master_sol, const PrepareWeightsState& prepare_weights,
+    DriverState* state) {
+  dxpy(master_sol.solution, absl::MakeSpan(state->sum_solutions));
+  state->sum_solution_value += master_sol.objective_value;
+  state->num_iterations++;
+
+  // Only update the objective value bound if we stopped for feasibility.
+  if (master_sol.feasibility <= kEps) {
+    state->best_bound = std::max(state->best_bound, master_sol.objective_value);
+  }
+
+  const double observed_loss =
+      master_sol.feasibility / prepare_weights.mix_loss.sum_weights;
+  state->sum_solution_feasibility += observed_loss;
+
+  state->last_solution = std::move(master_sol.solution);
+  return observed_loss;
+}
+
+// Observes losses for all constraints and updates the loss trackers in state.
+ObserveLossState ObserveAllLosses(absl::Span<CoverConstraint> constraints,
+                                  DriverState* state) {
+  ObserveLossState observe_state(state->last_solution);
+  for (auto& constraint : constraints) {
+    constraint.ObserveLoss(&observe_state);
+  }
+
+  state->prev_min_loss = observe_state.min_loss;
+  state->prev_max_loss = observe_state.max_loss;
+  state->max_last_solution_infeasibility = observe_state.max_infeasibility;
+  return observe_state;
+}
+
+UpdateMixLossState UpdateAllMixLosses(
+    absl::Span<CoverConstraint> constraints,
+    const PrepareWeightsState& prepare_weights,
+    const ObserveLossState& observe_state, DriverState* state) {
+  UpdateMixLossState update_state(observe_state.min_loss,
+                                  prepare_weights.mix_loss.eta);
+  for (auto& constraint : constraints) {
+    constraint.UpdateMixLoss(&update_state);
+  }
+
+  state->prev_num_non_zero = update_state.mix_loss.num_weights;
+  return update_state;
+}
 }  // namespace
 
 DriverState::DriverState(absl::Span<const double> obj_values_in)
@@ -79,45 +131,16 @@ void DriveOneIteration(absl::Span<CoverConstraint> constraints,
   const double prev_mix_loss = ComputeMixLoss(prepare_weights.mix_loss);
   const double target_objective_value = ComputeTargetObjectiveValue(*state);
 
-  KnapsackSolution master_sol =
+  const double observed_loss = UpdateStateForNewRelaxedSolution(
       SolveKnapsack(state->obj_values, prepare_weights.knapsack_weights,
-                    prepare_weights.knapsack_rhs, kEps, target_objective_value);
+                    prepare_weights.knapsack_rhs, kEps, target_objective_value),
+      prepare_weights, state);
 
-  dxpy(master_sol.solution, absl::MakeSpan(state->sum_solutions));
-  state->sum_solution_value += master_sol.objective_value;
-  state->num_iterations++;
-
-  // Only update the objective value bound if we stopped for feasibility.
-
-  if (master_sol.feasibility <= kEps) {
-    state->best_bound = std::max(state->best_bound, master_sol.objective_value);
-  }
-
-  const double observed_loss =
-      master_sol.feasibility / prepare_weights.mix_loss.sum_weights;
-  state->sum_solution_feasibility += observed_loss;
-
-  ObserveLossState observe_state(master_sol.solution);
-  for (auto& constraint : constraints) {
-    constraint.ObserveLoss(&observe_state);
-  }
-
-  state->prev_min_loss = observe_state.min_loss;
-  state->prev_max_loss = observe_state.max_loss;
-
-  UpdateMixLossState update_state(observe_state.min_loss,
-                                  prepare_weights.mix_loss.eta);
-  for (auto& constraint : constraints) {
-    constraint.UpdateMixLoss(&update_state);
-  }
-
-  state->prev_num_non_zero = update_state.mix_loss.num_weights;
+  const ObserveLossState observe_state = ObserveAllLosses(constraints, state);
+  const UpdateMixLossState update_state =
+      UpdateAllMixLosses(constraints, prepare_weights, observe_state, state);
 
   const double mix_loss = ComputeMixLoss(update_state.mix_loss);
-
   state->sum_mix_gap +=
       std::max(0.0, observed_loss - (mix_loss - prev_mix_loss));
-
-  state->max_last_solution_infeasibility = observe_state.max_infeasibility;
-  state->last_solution = std::move(master_sol.solution);
 }
