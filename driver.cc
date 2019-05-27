@@ -91,6 +91,8 @@ double UpdateStateWithNewRelaxedSolution(
     state->best_bound = std::max(state->best_bound, master_sol.objective_value);
   }
 
+  state->last_solution_value = master_sol.objective_value;
+
   const double observed_loss =
       master_sol.feasibility / prepare_weights.mix_loss.sum_weights;
   state->sum_solution_feasibility += observed_loss;
