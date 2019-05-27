@@ -96,6 +96,7 @@ double UpdateStateWithNewRelaxedSolution(
   state->sum_solution_feasibility += observed_loss;
 
   state->last_solution = std::move(master_sol.solution);
+  state->feasible = master_sol.feasible;
   return observed_loss;
 }
 
@@ -141,6 +142,10 @@ void DriveOneIteration(absl::Span<CoverConstraint> constraints,
 
   const double observed_loss =
       UpdateStateWithNewRelaxedSolution(prepare_weights, state);
+  // Nothing to do here: we have an infeasible problem!
+  if (!state->feasible) {
+    return;
+  }
 
   const ObserveLossState observe_state = ObserveAllLosses(constraints, state);
   const UpdateMixLossState update_state =
