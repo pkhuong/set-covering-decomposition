@@ -9,7 +9,7 @@
 
 static constexpr double kFeasEps = 5e-3;
 static constexpr size_t kNumTours = 1000;
-static constexpr size_t kNumLocs = 200;
+static constexpr size_t kNumLocs = 1000;
 static constexpr size_t kMaxTourPerLoc = 20;
 static constexpr size_t kMaxIter = 100000;
 static constexpr bool kCheckFeasible = false;
@@ -53,9 +53,14 @@ int main(int, char**) {
   for (size_t i = 0; i < kMaxIter; ++i) {
     DriveOneIteration(absl::MakeSpan(constraints), &state);
 
-    bool done = (-state.prev_min_loss / state.num_iterations) < kFeasEps;
+    const bool done = (-state.prev_min_loss / state.num_iterations) < kFeasEps;
+    const bool infeasible = !state.feasible;
+    const bool relaxation_optimal =
+        kCheckFeasible && state.max_last_solution_infeasibility < kFeasEps &&
+        state.last_solution_value <= state.best_bound + kFeasEps;
 
-    if (i < 10 || ((i + 1) % 100) == 0 || done) {
+    if (i < 10 || ((i + 1) % 100) == 0 || done || infeasible ||
+        relaxation_optimal) {
       std::cout << "It " << i + 1 << ":"
                 << " mix gap=" << state.sum_mix_gap << " max avg viol="
                 << -state.prev_min_loss / state.num_iterations
@@ -69,13 +74,12 @@ int main(int, char**) {
                 << "\n";
     }
 
-    if (!state.feasible) {
+    if (infeasible) {
       std::cout << "Infeasible!?!\n";
       return 0;
     }
 
-    if (kCheckFeasible && state.max_last_solution_infeasibility < kFeasEps &&
-        state.last_solution_value <= state.best_bound + kFeasEps) {
+    if (relaxation_optimal) {
       std::cout << "Feasible!\n";
       solution = &state.last_solution;
       break;
