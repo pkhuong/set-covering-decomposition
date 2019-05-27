@@ -66,19 +66,24 @@ double ComputeTargetObjectiveValue(const DriverState& state) {
   return sum_best_bound - sum_value;
 }
 
-// Updates all the counters related to the master knapsack solutions,
-// and returns the observed loss (rescaled for probabilities).
+// Finds a solution for the new knapsack master problem, and updates
+// all the counters related to the master knapsack solutions, and
+// returns the observed loss (rescaled for probabilities).
 //
 // Stores the master solution in `state->last_solution`
-double UpdateStateForNewRelaxedSolution(
-    KnapsackSolution master_sol, const PrepareWeightsState& prepare_weights,
-    DriverState* state) {
+double UpdateStateWithNewRelaxedSolution(
+    const PrepareWeightsState& prepare_weights, DriverState* state) {
+  const double target_objective_value = ComputeTargetObjectiveValue(*state);
+  KnapsackSolution master_sol =
+      SolveKnapsack(state->obj_values, prepare_weights.knapsack_weights,
+                    prepare_weights.knapsack_rhs, kEps, target_objective_value);
+
   dxpy(master_sol.solution, absl::MakeSpan(state->sum_solutions));
   state->sum_solution_value += master_sol.objective_value;
   state->num_iterations++;
 
   // Only update the objective value bound if we stopped for feasibility.
-  if (master_sol.feasibility <= kEps) {
+  if (master_sol.feasibility <= kEps) {  // XXX: should we look for exactly 0?
     state->best_bound = std::max(state->best_bound, master_sol.objective_value);
   }
 
@@ -129,12 +134,9 @@ void DriveOneIteration(absl::Span<CoverConstraint> constraints,
   const PrepareWeightsState prepare_weights =
       PrepareAllWeights(constraints, *state);
   const double prev_mix_loss = ComputeMixLoss(prepare_weights.mix_loss);
-  const double target_objective_value = ComputeTargetObjectiveValue(*state);
 
-  const double observed_loss = UpdateStateForNewRelaxedSolution(
-      SolveKnapsack(state->obj_values, prepare_weights.knapsack_weights,
-                    prepare_weights.knapsack_rhs, kEps, target_objective_value),
-      prepare_weights, state);
+  const double observed_loss =
+      UpdateStateWithNewRelaxedSolution(prepare_weights, state);
 
   const ObserveLossState observe_state = ObserveAllLosses(constraints, state);
   const UpdateMixLossState update_state =
