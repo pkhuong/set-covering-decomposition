@@ -3,9 +3,19 @@ cc_library(
   hdrs = ["driver.h"],
   srcs = ["driver.cc"],
   deps = [
+    "@com_google_absl//absl/types:optional",
     "@com_google_absl//absl/types:span",
     ":cover-constraint",
     ":knapsack",
+  ],
+)
+
+cc_test(
+  name = "driver_test",
+  srcs = ["driver_test.cc"],
+  deps = [
+    ":driver",
+    "@com_google_googletest//:gtest_main",
   ],
 )
 

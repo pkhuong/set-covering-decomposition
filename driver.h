@@ -4,13 +4,13 @@
 #include <limits>
 #include <vector>
 
+#include "absl/types/optional.h"
 #include "absl/types/span.h"
 
 #include "cover-constraint.h"
 
 struct DriverState {
-  explicit DriverState(absl::Span<const double> obj_values_in)
-      : obj_values(obj_values_in), sum_solutions(obj_values.size(), 0.0) {}
+  explicit DriverState(absl::Span<const double> obj_values_in);
 
   absl::Span<const double> obj_values;
 
@@ -19,11 +19,17 @@ struct DriverState {
 
   size_t prev_num_non_zero{0};
   double prev_min_loss{0};
-  double prev_max_loss{std::numeric_limits<double>::lowest()};
-  double best_bound{0};
+  double prev_max_loss{-std::numeric_limits<double>::infinity()};
+  double best_bound{0.0};
+
+  double sum_solution_value{0};
+  double sum_solution_feasibility{0};
   std::vector<double> sum_solutions;
 };
 
-void DriveOneIteration(absl::Span<CoverConstraint> constraints,
-                       DriverState* state);
+// If the return value isn't nullopt, that's the feasible solution
+// found in this iteration. It's also a solution to a relaxation, so
+// guaranteed to be optimal.
+absl::optional<std::vector<double>> DriveOneIteration(
+    absl::Span<CoverConstraint> constraints, DriverState* state);
 #endif /* !DRIVER_H */
