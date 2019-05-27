@@ -60,10 +60,7 @@ void DriveOneIteration(absl::Span<CoverConstraint> constraints,
     const double sum_value = state->sum_solution_value;
 
     assert(sum_best_bound + kEps >= sum_value);
-    if (sum_best_bound < sum_value) {
-      sum_best_bound = sum_value;
-    }
-
+    sum_best_bound = std::max(sum_best_bound, sum_value);
     // If the objective value hits target_objective_value, the new sum
     // of solution values will yield an average of exactly
     // state->best_bound.
