@@ -36,7 +36,9 @@ struct KnapsackSolution {
 // Best bound is a lower bound on the objective value.  If the optimal
 // value for this knapsack is less than `best_bound`, stop as soon as
 // we hit `best_bound` and instead return a "more feasible" solution.
+//
+// eps is the allowed leeway on feasibility.
 KnapsackSolution SolveKnapsack(absl::Span<const double> obj_values,
                                absl::Span<const double> weights, double rhs,
-                               double best_bound);
+                               double eps, double best_bound);
 #endif /* !KNAPSACK_H */

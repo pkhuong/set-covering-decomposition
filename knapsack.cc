@@ -39,8 +39,9 @@ std::ostream& operator<<(std::ostream& stream,
 // the knapsack.
 KnapsackSolution SolveKnapsack(absl::Span<const double> obj_values,
                                absl::Span<const double> weights, double rhs,
-                               double best_bound) {
+                               double eps, double best_bound) {
   assert(obj_values.size() == weights.size());
+  assert(eps >= 0);
   for (double weight : weights) {
     (void)weight;
     assert(weight <= 0);
@@ -54,11 +55,14 @@ KnapsackSolution SolveKnapsack(absl::Span<const double> obj_values,
   // If we don't remove anything, the sum of weights is
   // knapsack.sum_candidate_values.
   // The maximum weight increase incurred by removing items is
-  const double max_weight_increase = rhs - knapsack.sum_candidate_weights;
-  if (max_weight_increase < 0) {
+  double max_weight_increase = rhs - knapsack.sum_candidate_weights;
+  if (max_weight_increase < -eps) {
     ret.feasible = false;
     return ret;
   }
+
+  const double weight_fudge_value = std::max(-max_weight_increase, 0.0);
+  max_weight_increase += weight_fudge_value;
 
   // We want to keep the objective value for the min knapsack at
   // least >= best_bound.  We're also removing items, so that is
@@ -105,6 +109,13 @@ KnapsackSolution SolveKnapsack(absl::Span<const double> obj_values,
     partition.remaining_weight -= remaining * break_elem.weight;
     partition.remaining_value -= remaining * break_elem.value;
   }
+
+  assert(partition.remaining_weight >= -eps);
+  // If we relaxed the right-hand side a bit to get a feasible solution,
+  // undo that relaxation when reporting feasibility, and clamp other
+  // small infeasibilities to 0.
+  partition.remaining_weight =
+      std::max(0.0, partition.remaining_weight - weight_fudge_value);
 
   // We have remainining_value = -best_bound - sum_candidate_values -
   // sum_{removed i} value_i.
