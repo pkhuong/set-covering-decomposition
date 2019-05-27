@@ -67,6 +67,7 @@ void PrepareWeightsState::Merge(PrepareWeightsState in) {
 void ObserveLossState::Merge(const ObserveLossState& in) {
   min_loss = std::min(min_loss, in.min_loss);
   max_loss = std::max(max_loss, in.max_loss);
+  all_feasible &= in.all_feasible;
 }
 
 void UpdateMixLossState::Merge(const UpdateMixLossState& in) {
@@ -95,6 +96,10 @@ void CoverConstraint::PrepareWeights(PrepareWeightsState* state) {
 }
 
 void CoverConstraint::ObserveLoss(ObserveLossState* state) {
+  bool all_feasible =
+      state->knapsack_solution[potential_tours_[last_solution_]] >=
+      1.0 - state->eps;
+
   loss_[last_solution_] -= 1;
   for (size_t i = 0, n = potential_tours_.size(); i < n; ++i) {
     loss_[i] += state->knapsack_solution[potential_tours_[i]];
@@ -102,6 +107,7 @@ void CoverConstraint::ObserveLoss(ObserveLossState* state) {
 
   state->min_loss = std::min(state->min_loss, dmin(loss_));
   state->max_loss = std::max(state->max_loss, dmax(loss_));
+  state->all_feasible &= all_feasible;
 }
 
 void CoverConstraint::UpdateMixLoss(UpdateMixLossState* state) const {

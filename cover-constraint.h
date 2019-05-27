@@ -28,12 +28,16 @@ struct PrepareWeightsState {
 };
 
 struct ObserveLossState {
-  explicit ObserveLossState(absl::Span<const double> solution_in)
-      : knapsack_solution(solution_in) {}
+  explicit ObserveLossState(absl::Span<const double> solution_in,
+                            double eps_in = 0.0)
+      : knapsack_solution(solution_in), eps(eps_in) {}
 
   const absl::Span<const double> knapsack_solution;
+  const double eps;
   double min_loss{std::numeric_limits<double>::max()};
   double max_loss{std::numeric_limits<double>::lowest()};
+
+  bool all_feasible{true};
 
   void Merge(const ObserveLossState& in);
 };
@@ -105,6 +109,6 @@ class CoverConstraint {
   // often the master picks a variable that we didn't.
   //
   // The values in this array are cumulative.
-  absl::FixedArray<double, 0>  loss_;
+  absl::FixedArray<double, 0> loss_;
 };
 #endif /* !COVER_CONSTRAINT_H */

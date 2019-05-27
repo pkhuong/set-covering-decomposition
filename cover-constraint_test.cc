@@ -41,6 +41,7 @@ TEST(CoverConstraint, FirstIteration) {
   EXPECT_THAT(constraint.loss(), ElementsAre(-0.9, 1.0, 0));
   EXPECT_EQ(loss_state.min_loss, -0.9);
   EXPECT_EQ(loss_state.max_loss, 1.0);
+  EXPECT_FALSE(loss_state.all_feasible);
 
   {
     UpdateMixLossState update_state(loss_state.min_loss,
@@ -150,7 +151,28 @@ TEST(CoverConstraint, SecondInfinityIteration) {
                             -0.5 - std::exp(-1.0)));
     EXPECT_EQ(prep_state.knapsack_rhs, -1.0 - std::exp(-2.0));
   }
-  
+
+  // Make sure we detect feasibility of this individual relaxation.
+  {
+    CoverConstraint copy(constraint);
+
+    std::vector<double> solution = {0.0, 1.0, 0.0, 0.0};
+    ObserveLossState loss_state(solution);
+    copy.ObserveLoss(&loss_state);
+    EXPECT_TRUE(loss_state.all_feasible);
+  }
+
+  // And that we AND feasibility.
+  {
+    CoverConstraint copy(constraint);
+
+    std::vector<double> solution = {0.0, 1.0, 0.0, 0.0};
+    ObserveLossState loss_state(solution);
+    loss_state.all_feasible = false;
+    copy.ObserveLoss(&loss_state);
+    EXPECT_FALSE(loss_state.all_feasible);
+  }
+
   // Update for a master solution.
   //
   // Master picks 0.
@@ -159,18 +181,19 @@ TEST(CoverConstraint, SecondInfinityIteration) {
   {
     std::vector<double> solution = {1.0, 0.0, 0.0, 0.0};
     ObserveLossState loss_state(solution);
-    
+
     ASSERT_EQ(constraint.last_solution(), 1);
     constraint.ObserveLoss(&loss_state);
     EXPECT_THAT(constraint.loss(), ElementsAre(1.0 - 0.9, 0.0, 0.0));
     EXPECT_EQ(loss_state.min_loss, 0.0);
     EXPECT_EQ(loss_state.max_loss, 1.0 - 0.9);
+    EXPECT_FALSE(loss_state.all_feasible);
   }
-  
+
   // Recompute the mix loss.
   {
     UpdateMixLossState update_state(0.0, 1.0);
-    
+
     update_state.num_weights = 2;
     update_state.sum_weights = 0.5;
     constraint.UpdateMixLoss(&update_state);
