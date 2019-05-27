@@ -141,7 +141,7 @@ size_t Log2Ceiling(size_t n) {
 PartitionInstance::PartitionInstance(absl::Span<NormalizedEntry> entries_,
                                      double max_weight_, double max_value_)
     : PartitionInstance(entries_, max_weight_, max_value_, 0,
-                        2 + Log2Ceiling(entries_.size() | 1),
+                        2 + 2 * Log2Ceiling(entries_.size() | 1),
                         kMinPartitionSize) {}
 
 PartitionInstance::PartitionInstance(absl::Span<NormalizedEntry> entries_,
