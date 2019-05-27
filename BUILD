@@ -1,4 +1,15 @@
 cc_library(
+  name = "driver",
+  hdrs = ["driver.h"],
+  srcs = ["driver.cc"],
+  deps = [
+    "@com_google_absl//absl/types:span",
+    ":cover-constraint",
+    ":knapsack",
+  ],
+)
+
+cc_library(
   name = "cover-constraint",
   hdrs = ["cover-constraint.h"],
   srcs = ["cover-constraint.cc"],

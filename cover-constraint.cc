@@ -1,33 +1,11 @@
 #include "cover-constraint.h"
 
+#include <assert.h>
+
 #include <algorithm>
 #include <cmath>
 
 #include "absl/algorithm/container.h"
-
-void PrepareWeightsState::Merge(const PrepareWeightsState& in) {
-  num_weights += in.num_weights;
-  sum_weights += in.sum_weights;
-  if (knapsack_weights.size() < in.knapsack_weights.size()) {
-    knapsack_weights.resize(in.knapsack_weights.size(), 0.0);
-  }
-
-  for (size_t i = 0; i < in.knapsack_weights.size(); ++i) {
-    knapsack_weights[i] += in.knapsack_weights[i];
-  }
-
-  knapsack_rhs += in.knapsack_rhs;
-}
-
-void ObserveLossState::Merge(const ObserveLossState& in) {
-  min_loss = std::min(min_loss, in.min_loss);
-  max_loss = std::max(max_loss, in.max_loss);
-}
-
-void UpdateMixLossState::Merge(const UpdateMixLossState& in) {
-  num_weights += in.num_weights;
-  sum_weights += in.sum_weights;
-}
 
 namespace {
 double dsum(absl::Span<const double> vec) {
@@ -57,6 +35,12 @@ double dmax(absl::Span<const double> vec) {
   return acc;
 }
 
+void vinc(absl::Span<const double> src, absl::Span<double> dst) {
+  for (size_t i = 0; i < src.size(); ++i) {
+    dst[i] += src[i];
+  }
+}
+
 void sdec(absl::Span<const uint32_t> indices, absl::Span<const double> weights,
           absl::Span<double> dst) {
   for (size_t i = 0, n = indices.size(); i < n; ++i) {
@@ -64,12 +48,31 @@ void sdec(absl::Span<const uint32_t> indices, absl::Span<const double> weights,
   }
 }
 
-absl::FixedArray<uint32_t> usorted(absl::Span<const uint32_t> tours_in) {
-  absl::FixedArray<uint32_t> ret(tours_in.begin(), tours_in.end());
+absl::FixedArray<uint32_t, 0> usorted(absl::Span<const uint32_t> tours_in) {
+  absl::FixedArray<uint32_t, 0> ret(tours_in.begin(), tours_in.end());
   absl::c_sort(ret);
   return ret;
 }
 }  // namespace
+
+void PrepareWeightsState::Merge(PrepareWeightsState in) {
+  num_weights += in.num_weights;
+  sum_weights += in.sum_weights;
+
+  assert(knapsack_weights.size() == in.knapsack_weights.size());
+  vinc(in.knapsack_weights, absl::MakeSpan(knapsack_weights));
+  knapsack_rhs += in.knapsack_rhs;
+}
+
+void ObserveLossState::Merge(const ObserveLossState& in) {
+  min_loss = std::min(min_loss, in.min_loss);
+  max_loss = std::max(max_loss, in.max_loss);
+}
+
+void UpdateMixLossState::Merge(const UpdateMixLossState& in) {
+  num_weights += in.num_weights;
+  sum_weights += in.sum_weights;
+}
 
 CoverConstraint::CoverConstraint(absl::Span<const uint32_t> tours_in)
     : potential_tours_(usorted(tours_in)),
@@ -87,10 +90,7 @@ void CoverConstraint::PrepareWeights(PrepareWeightsState* state) {
   state->sum_weights += dsum(scratch);
   state->knapsack_rhs -= SolveSubproblem(scratch);
 
-  if (state->knapsack_weights.size() <= potential_tours_.back()) {
-    state->knapsack_weights.resize(potential_tours_.back() + 1, 0.0);
-  }
-
+  assert(state->knapsack_weights.size() > potential_tours_.back());
   sdec(potential_tours_, scratch, absl::MakeSpan(state->knapsack_weights));
 }
 
@@ -104,7 +104,7 @@ void CoverConstraint::ObserveLoss(ObserveLossState* state) {
   state->max_loss = std::max(state->max_loss, dmax(loss_));
 }
 
-void CoverConstraint::UpdateMixLoss(UpdateMixLossState* state) {
+void CoverConstraint::UpdateMixLoss(UpdateMixLossState* state) const {
   std::vector<double>& scratch = state->scratch;
 
   if (potential_tours_.empty()) {
@@ -118,6 +118,12 @@ void CoverConstraint::UpdateMixLoss(UpdateMixLossState* state) {
 
 void CoverConstraint::PopulateWeights(double eta, double min_loss,
                                       std::vector<double>* weights) const {
+  // Ensure geometric growth works despite repeated `resize` calls.
+  if (potential_tours_.size() > weights->capacity()) {
+    weights->reserve(
+        std::max(2 * weights->capacity(), potential_tours_.size()));
+  }
+
   weights->resize(potential_tours_.size());
   if (std::isinf(eta)) {
     for (size_t i = 0, n = loss_.size(); i < n; ++i) {
@@ -141,7 +147,9 @@ double CoverConstraint::SolveSubproblem(absl::Span<const double> weights) {
 
   // XXX vectorize.
   for (size_t i = 1, n = weights.size(); i < n; ++i) {
-    index = (weights[i] < min_weight) ? i : index;
+    const double weight_i = weights[i];
+    index = (weight_i < min_weight) ? i : index;
+    min_weight = (weight_i < min_weight) ? weight_i : min_weight;
   }
 
   last_solution_ = index;

@@ -9,8 +9,11 @@
 #include "absl/types/span.h"
 
 struct PrepareWeightsState {
-  explicit PrepareWeightsState(double min_loss_in, double eta_in)
-      : min_loss(min_loss_in), eta(eta_in) {}
+  explicit PrepareWeightsState(size_t num_knapsack_weights, double min_loss_in,
+                               double eta_in)
+      : min_loss(min_loss_in),
+        eta(eta_in),
+        knapsack_weights(num_knapsack_weights, 0.0) {}
 
   const double min_loss;
   const double eta;
@@ -18,10 +21,10 @@ struct PrepareWeightsState {
 
   size_t num_weights{0};
   double sum_weights{0};
-  std::vector<double> knapsack_weights;
+  absl::FixedArray<double, 0> knapsack_weights;
   double knapsack_rhs;
 
-  void Merge(const PrepareWeightsState& in);
+  void Merge(PrepareWeightsState in);
 };
 
 struct ObserveLossState {
@@ -75,7 +78,11 @@ class CoverConstraint {
 
   // Recomputes the posterior mix loss given the end-of-iteration `state`.
   // Increments `sum_weights` with the un-normalised posterior weights.
-  void UpdateMixLoss(UpdateMixLossState* state);
+  void UpdateMixLoss(UpdateMixLossState* state) const;
+
+  // These getters are only exposed for testing.
+  size_t last_solution() const { return last_solution_; }
+  absl::Span<const double> loss() const { return loss_; }
 
  private:
   void PopulateWeights(double eta, double min_loss,
@@ -91,9 +98,13 @@ class CoverConstraint {
   //
   // Given weight w for this constraint, the surrogate subproblem's
   // linear constraint gains [-w x_orig <= - w x_clone].
-  const absl::FixedArray<uint32_t> potential_tours_;
+  const absl::FixedArray<uint32_t, 0> potential_tours_;
 
   size_t last_solution_{-1ULL};
-  absl::FixedArray<double> loss_;  // For the cloning constraints, cumulative.
+  // Loss tracks satisfaction for the cloning constraints, i.e., how
+  // often the master picks a variable that we didn't.
+  //
+  // The values in this array are cumulative.
+  absl::FixedArray<double, 0>  loss_;
 };
 #endif /* !COVER_CONSTRAINT_H */

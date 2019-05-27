@@ -11,22 +11,23 @@ double ComputeMixLoss(double min_loss, double eta, double sum_weights,
   return min_loss - std::log(sum_weights / num_weights) / eta;
 }
 
-void dxpy(const std::vector<double>& src, std::vector<double>* acc) {
-  if (acc->size() < src.size()) {
-    acc->resize(src.size(), 0.0);
-  }
+void dxpy(absl::Span<const double> src, absl::Span<double> acc) {
+  assert(src.size() == acc.size());
 
   for (size_t i = 0, n = src.size(); i < n; ++i) {
-    (*acc)[i] += src[i];
+    acc[i] += src[i];
   }
 }
 }  // namespace
 
-void DriveOneIteration(std::vector<CoverConstraint>& constraints,
+void DriveOneIteration(absl::Span<CoverConstraint> constraints,
                        DriverState* state) {
-  const double eta = std::log(state->prev_num_non_zero) / state->sum_mix_gap;
+  // Step size.
+  const double eta = std::log(std::max<size_t>(2, state->prev_num_non_zero)) /
+                     state->sum_mix_gap;
 
-  PrepareWeightsState prepare_weights(state->prev_min_loss, eta);
+  PrepareWeightsState prepare_weights(state->prev_min_loss, eta,
+                                      state->obj_values.size());
   for (auto& constraint : constraints) {
     constraint.PrepareWeights(&prepare_weights);
   }
@@ -39,7 +40,7 @@ void DriveOneIteration(std::vector<CoverConstraint>& constraints,
       SolveKnapsack(state->obj_values, prepare_weights.knapsack_weights,
                     prepare_weights.knapsack_rhs, state->best_bound);
 
-  dxpy(master_sol.solution, &state->sum_solutions);
+  dxpy(master_sol.solution, absl::MakeSpan(state->sum_solutions));
   state->num_iterations++;
   state->best_bound = std::max(state->best_bound, master_sol.objective_value);
 
