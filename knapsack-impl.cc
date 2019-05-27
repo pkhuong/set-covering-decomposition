@@ -61,6 +61,9 @@ PartitionResult PartitionEntriesBaseCase(PartitionInstance instance) {
   size_t i = instance.initial_offset;
   double remaining_weight = instance.max_weight;
   double remaining_value = instance.max_value;
+  assert(remaining_weight >= 0);
+  assert(remaining_value >= 0);
+
   for (const NormalizedEntry& entry : instance.entries) {
     const double updated_remaining_weight = remaining_weight - entry.weight;
     const double updated_remaining_value = remaining_value - entry.value;
