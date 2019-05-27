@@ -1,3 +1,11 @@
+cc_binary(
+  name = "random-set-cover",
+  srcs = ["random-set-cover.cc"],
+  deps = [
+    ":driver",
+  ],
+)
+
 cc_library(
   name = "driver",
   hdrs = ["driver.h"],
