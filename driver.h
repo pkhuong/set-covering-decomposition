@@ -25,11 +25,12 @@ struct DriverState {
   double sum_solution_value{0};
   double sum_solution_feasibility{0};
   std::vector<double> sum_solutions;
+
+  double max_last_solution_infeasibility{
+      std::numeric_limits<double>::infinity()};
+  std::vector<double> last_solution;
 };
 
-// If the return value isn't nullopt, that's the feasible solution
-// found in this iteration. It's also a solution to a relaxation, so
-// guaranteed to be optimal.
-absl::optional<std::vector<double>> DriveOneIteration(
-    absl::Span<CoverConstraint> constraints, DriverState* state);
+void DriveOneIteration(absl::Span<CoverConstraint> constraints,
+                       DriverState* state);
 #endif /* !DRIVER_H */

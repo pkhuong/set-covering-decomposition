@@ -6,7 +6,6 @@
 using ::testing::DoubleEq;
 using ::testing::DoubleNear;
 using ::testing::ElementsAre;
-using ::testing::Optional;
 
 // Two constraints, one iteration.
 //
@@ -25,8 +24,9 @@ TEST(Driver, FirstIterationDone) {
   const double costs[] = {1.0, 1.0, 3.0};
   DriverState state(costs);
 
-  EXPECT_THAT(DriveOneIteration(absl::MakeSpan(constraints), &state),
-              Optional(ElementsAre(1.0, 1.0, 0.0)));
+  DriveOneIteration(absl::MakeSpan(constraints), &state);
+  EXPECT_EQ(state.max_last_solution_infeasibility, 0.0);
+  EXPECT_THAT(state.last_solution, ElementsAre(1.0, 1.0, 0.0));
   EXPECT_EQ(state.num_iterations, 1);
   EXPECT_EQ(state.sum_mix_gap, 0.0);
   EXPECT_EQ(state.prev_num_non_zero, 4);
@@ -61,8 +61,8 @@ TEST(Driver, TwoIterations) {
   const double costs[] = {1.0, 1.0, 1.0};
   DriverState state(costs);
 
-  EXPECT_EQ(DriveOneIteration(absl::MakeSpan(constraints), &state),
-            absl::nullopt);
+  DriveOneIteration(absl::MakeSpan(constraints), &state);
+  EXPECT_EQ(state.max_last_solution_infeasibility, 1.0);
   EXPECT_EQ(state.num_iterations, 1);
   // Mprev = 0
   // M = -1.0
@@ -85,8 +85,8 @@ TEST(Driver, TwoIterations) {
   EXPECT_THAT(state.sum_solution_value, DoubleEq(1.0));
   EXPECT_THAT(state.sum_solution_feasibility, DoubleEq(0.0));
 
-  EXPECT_EQ(DriveOneIteration(absl::MakeSpan(constraints), &state),
-            absl::nullopt);
+  DriveOneIteration(absl::MakeSpan(constraints), &state);
+  EXPECT_EQ(state.max_last_solution_infeasibility, 1.0);
   EXPECT_EQ(state.num_iterations, 2);
 
   // Eta = log(4).
@@ -152,8 +152,8 @@ TEST(Driver, TwoIterationsWithExactLowerBound) {
   DriverState state(costs);
   state.best_bound = 1.5;
 
-  EXPECT_EQ(DriveOneIteration(absl::MakeSpan(constraints), &state),
-            absl::nullopt);
+  DriveOneIteration(absl::MakeSpan(constraints), &state);
+  EXPECT_EQ(state.max_last_solution_infeasibility, 1.0);
   EXPECT_EQ(state.num_iterations, 1);
   EXPECT_EQ(state.sum_mix_gap, 1.0);
   EXPECT_EQ(state.prev_num_non_zero, 4);
@@ -173,8 +173,8 @@ TEST(Driver, TwoIterationsWithExactLowerBound) {
   EXPECT_THAT(state.sum_solution_value, DoubleEq(1.5));
   EXPECT_THAT(state.sum_solution_feasibility, DoubleEq(0.0));
 
-  EXPECT_EQ(DriveOneIteration(absl::MakeSpan(constraints), &state),
-            absl::nullopt);
+  DriveOneIteration(absl::MakeSpan(constraints), &state);
+  EXPECT_EQ(state.max_last_solution_infeasibility, 1.0);
 
   // Second iteration. Both constraints pick x2, but knapsack solution
   // is [0.5, -1, 0].
@@ -196,8 +196,8 @@ TEST(Driver, TwoIterationsWithExactLowerBound) {
               DoubleEq((1.5 - 1 / 8.0) / (2 + 1 / 8.0)));
 
   const double kDelta = state.sum_mix_gap;
-  EXPECT_EQ(DriveOneIteration(absl::MakeSpan(constraints), &state),
-            absl::nullopt);
+  DriveOneIteration(absl::MakeSpan(constraints), &state);
+  EXPECT_EQ(state.max_last_solution_infeasibility, 1.0);
   EXPECT_EQ(state.prev_min_loss, -1.0);
   EXPECT_EQ(state.prev_max_loss, 0.5);
 

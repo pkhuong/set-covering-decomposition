@@ -67,7 +67,7 @@ void PrepareWeightsState::Merge(PrepareWeightsState in) {
 void ObserveLossState::Merge(const ObserveLossState& in) {
   min_loss = std::min(min_loss, in.min_loss);
   max_loss = std::max(max_loss, in.max_loss);
-  all_feasible &= in.all_feasible;
+  max_infeasibility = std::max(max_infeasibility, in.max_infeasibility);
 }
 
 void UpdateMixLossState::Merge(const UpdateMixLossState& in) {
@@ -96,18 +96,20 @@ void CoverConstraint::PrepareWeights(PrepareWeightsState* state) {
 }
 
 void CoverConstraint::ObserveLoss(ObserveLossState* state) {
-  bool all_feasible =
-      state->knapsack_solution[potential_tours_[last_solution_]] >=
-      1.0 - state->eps;
+  const double infeasibility =
+      1.0 - state->knapsack_solution[potential_tours_[last_solution_]];
 
   loss_[last_solution_] -= 1;
   for (size_t i = 0, n = potential_tours_.size(); i < n; ++i) {
     loss_[i] += state->knapsack_solution[potential_tours_[i]];
   }
 
-  state->min_loss = std::min(state->min_loss, dmin(loss_));
-  state->max_loss = std::max(state->max_loss, dmax(loss_));
-  state->all_feasible &= all_feasible;
+  ObserveLossState current_loss(state->knapsack_solution);
+  current_loss.min_loss = dmin(loss_);
+  current_loss.max_loss = dmax(loss_);
+  current_loss.max_infeasibility = infeasibility;
+
+  state->Merge(current_loss);
 }
 
 void CoverConstraint::UpdateMixLoss(UpdateMixLossState* state) const {

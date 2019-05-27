@@ -38,8 +38,8 @@ DriverState::DriverState(absl::Span<const double> obj_values_in)
       best_bound(LowerBoundObjectiveValue(obj_values)),
       sum_solutions(obj_values.size(), 0.0) {}
 
-absl::optional<std::vector<double>> DriveOneIteration(
-    absl::Span<CoverConstraint> constraints, DriverState* state) {
+void DriveOneIteration(absl::Span<CoverConstraint> constraints,
+                       DriverState* state) {
   // Step size.
   const double eta = std::log(std::max<size_t>(2, state->prev_num_non_zero)) /
                      state->sum_mix_gap;
@@ -88,7 +88,7 @@ absl::optional<std::vector<double>> DriveOneIteration(
       master_sol.feasibility / prepare_weights.sum_weights;
   state->sum_solution_feasibility += observed_loss;
 
-  ObserveLossState observe_state(master_sol.solution, kEps);
+  ObserveLossState observe_state(master_sol.solution);
   for (auto& constraint : constraints) {
     constraint.ObserveLoss(&observe_state);
   }
@@ -110,9 +110,6 @@ absl::optional<std::vector<double>> DriveOneIteration(
   state->sum_mix_gap +=
       std::max(0.0, observed_loss - (mix_loss - prev_mix_loss));
 
-  if (observe_state.all_feasible) {
-    return std::move(master_sol.solution);
-  }
-
-  return absl::nullopt;
+  state->max_last_solution_infeasibility = observe_state.max_infeasibility;
+  state->last_solution = std::move(master_sol.solution);
 }
