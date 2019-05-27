@@ -55,9 +55,13 @@ absl::FixedArray<uint32_t, 0> usorted(absl::Span<const uint32_t> tours_in) {
 }
 }  // namespace
 
-void PrepareWeightsState::Merge(PrepareWeightsState in) {
+void MixLossInfo::Merge(const MixLossInfo& in) {
   num_weights += in.num_weights;
   sum_weights += in.sum_weights;
+}
+
+void PrepareWeightsState::Merge(const PrepareWeightsState& in) {
+  mix_loss.Merge(in.mix_loss);
 
   assert(knapsack_weights.size() == in.knapsack_weights.size());
   vinc(in.knapsack_weights, absl::MakeSpan(knapsack_weights));
@@ -71,8 +75,7 @@ void ObserveLossState::Merge(const ObserveLossState& in) {
 }
 
 void UpdateMixLossState::Merge(const UpdateMixLossState& in) {
-  num_weights += in.num_weights;
-  sum_weights += in.sum_weights;
+  mix_loss.Merge(in.mix_loss);
 }
 
 CoverConstraint::CoverConstraint(absl::Span<const uint32_t> tours_in)
@@ -86,9 +89,9 @@ void CoverConstraint::PrepareWeights(PrepareWeightsState* state) {
     return;
   }
 
-  PopulateWeights(state->eta, state->min_loss, &scratch);
-  state->num_weights += scratch.size();
-  state->sum_weights += dsum(scratch);
+  PopulateWeights(state->mix_loss.eta, state->mix_loss.min_loss, &scratch);
+  state->mix_loss.num_weights += scratch.size();
+  state->mix_loss.sum_weights += dsum(scratch);
   state->knapsack_rhs -= SolveSubproblem(scratch);
 
   assert(state->knapsack_weights.size() > potential_tours_.back());
@@ -119,9 +122,9 @@ void CoverConstraint::UpdateMixLoss(UpdateMixLossState* state) const {
     return;
   }
 
-  PopulateWeights(state->eta, state->min_loss, &scratch);
-  state->num_weights += scratch.size();
-  state->sum_weights += dsum(scratch);
+  PopulateWeights(state->mix_loss.eta, state->mix_loss.min_loss, &scratch);
+  state->mix_loss.num_weights += scratch.size();
+  state->mix_loss.sum_weights += dsum(scratch);
 }
 
 void CoverConstraint::PopulateWeights(double eta, double min_loss,

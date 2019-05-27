@@ -26,8 +26,8 @@ TEST(CoverConstraint, FirstIteration) {
   constraint.PrepareWeights(&prep_state);
   EXPECT_EQ(constraint.last_solution(), 0);
 
-  EXPECT_EQ(prep_state.num_weights, 3);
-  EXPECT_EQ(prep_state.sum_weights, 3.0);
+  EXPECT_EQ(prep_state.mix_loss.num_weights, 3);
+  EXPECT_EQ(prep_state.mix_loss.sum_weights, 3.0);
   EXPECT_THAT(prep_state.knapsack_weights, ElementsAre(-1.0, -1.0, 0.0, -1.0));
   EXPECT_EQ(prep_state.knapsack_rhs, -1);
 
@@ -51,20 +51,20 @@ TEST(CoverConstraint, FirstIteration) {
     // We still use eta (step size) = infinity, so we only give weights
     // to expects with optimal loss (equal to min_loss).
     constraint.UpdateMixLoss(&update_state);
-    EXPECT_EQ(update_state.num_weights, 3);
-    EXPECT_EQ(update_state.sum_weights, 1.0);
+    EXPECT_EQ(update_state.mix_loss.num_weights, 3);
+    EXPECT_EQ(update_state.mix_loss.sum_weights, 1.0);
   }
 
   // Same thing, but now with a finite step size
   {
     UpdateMixLossState update_state(-1.5, 2.0);
 
-    update_state.num_weights = 2;
-    update_state.sum_weights = 4;
+    update_state.mix_loss.num_weights = 2;
+    update_state.mix_loss.sum_weights = 4;
 
     constraint.UpdateMixLoss(&update_state);
-    EXPECT_EQ(update_state.num_weights, 2 + 3);
-    EXPECT_EQ(update_state.sum_weights,
+    EXPECT_EQ(update_state.mix_loss.num_weights, 2 + 3);
+    EXPECT_EQ(update_state.mix_loss.sum_weights,
               4.0 + std::exp(2 * (-1.5 - -0.9)) + std::exp(2 * (-1.5 - 1.0)) +
                   std::exp(2 * -1.5));
   }
@@ -114,8 +114,8 @@ TEST(CoverConstraint, SecondInfinityIteration) {
     // This round, we'll incentivize the master to pick 0, and ourselves
     // pick 1 or 2.
     EXPECT_THAT(constraint.last_solution(), AnyOf(1, 2));
-    EXPECT_EQ(prep_state.num_weights, 3);
-    EXPECT_EQ(prep_state.sum_weights, 1.0);
+    EXPECT_EQ(prep_state.mix_loss.num_weights, 3);
+    EXPECT_EQ(prep_state.mix_loss.sum_weights, 1.0);
     EXPECT_THAT(prep_state.knapsack_weights,
                 ElementsAre(-1.5, -0.5, -0.5, -0.5));
     EXPECT_EQ(prep_state.knapsack_rhs, -1.0);
@@ -144,8 +144,8 @@ TEST(CoverConstraint, SecondInfinityIteration) {
     // This round, we'll incentivize the master to pick 0, and ourselves
     // pick 1.
     EXPECT_EQ(constraint.last_solution(), 1);
-    EXPECT_EQ(prep_state.num_weights, 3);
-    EXPECT_EQ(prep_state.sum_weights,
+    EXPECT_EQ(prep_state.mix_loss.num_weights, 3);
+    EXPECT_EQ(prep_state.mix_loss.sum_weights,
               std::exp(tenth) + std::exp(-2.0) + std::exp(-1.0));
     EXPECT_THAT(prep_state.knapsack_weights,
                 ElementsAre(-0.5 - std::exp(tenth), -0.5 - std::exp(-2.0), -0.5,
@@ -195,10 +195,11 @@ TEST(CoverConstraint, SecondInfinityIteration) {
   {
     UpdateMixLossState update_state(0.0, 1.0);
 
-    update_state.num_weights = 2;
-    update_state.sum_weights = 0.5;
+    update_state.mix_loss.num_weights = 2;
+    update_state.mix_loss.sum_weights = 0.5;
     constraint.UpdateMixLoss(&update_state);
-    EXPECT_EQ(update_state.num_weights, 5);
-    EXPECT_EQ(update_state.sum_weights, 0.5 + std::exp(0.9 - 1.0) + 1.0 + 1.0);
+    EXPECT_EQ(update_state.mix_loss.num_weights, 5);
+    EXPECT_EQ(update_state.mix_loss.sum_weights,
+              0.5 + std::exp(0.9 - 1.0) + 1.0 + 1.0);
   }
 }

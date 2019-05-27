@@ -8,23 +8,30 @@
 #include "absl/container/fixed_array.h"
 #include "absl/types/span.h"
 
-struct PrepareWeightsState {
-  explicit PrepareWeightsState(size_t num_knapsack_weights, double min_loss_in,
-                               double eta_in)
-      : min_loss(min_loss_in),
-        eta(eta_in),
-        knapsack_weights(num_knapsack_weights, 0.0) {}
+struct MixLossInfo {
+  explicit MixLossInfo(double min_loss_in, double eta_in)
+      : min_loss(min_loss_in), eta(eta_in) {}
 
   const double min_loss;
   const double eta;
-  std::vector<double> scratch;
-
   size_t num_weights{0};
   double sum_weights{0};
+
+  void Merge(const MixLossInfo& in);
+};
+
+struct PrepareWeightsState {
+  explicit PrepareWeightsState(size_t num_knapsack_weights, double min_loss,
+                               double eta)
+      : mix_loss(min_loss, eta), knapsack_weights(num_knapsack_weights, 0.0) {}
+
+  MixLossInfo mix_loss;
+  std::vector<double> scratch;
+
   absl::FixedArray<double, 0> knapsack_weights;
   double knapsack_rhs;
 
-  void Merge(PrepareWeightsState in);
+  void Merge(const PrepareWeightsState& in);
 };
 
 struct ObserveLossState {
@@ -42,15 +49,11 @@ struct ObserveLossState {
 };
 
 struct UpdateMixLossState {
-  explicit UpdateMixLossState(double min_loss_in, double eta_in)
-      : min_loss(min_loss_in), eta(eta_in) {}
+  explicit UpdateMixLossState(double min_loss, double eta)
+      : mix_loss(min_loss, eta) {}
 
-  const double min_loss;
-  const double eta;
+  MixLossInfo mix_loss;
   std::vector<double> scratch;
-
-  size_t num_weights{0};
-  double sum_weights{0};
 
   void Merge(const UpdateMixLossState& in);
 };

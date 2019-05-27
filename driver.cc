@@ -19,9 +19,9 @@ double LowerBoundObjectiveValue(absl::Span<const double> values) {
   return acc;
 }
 
-double ComputeMixLoss(double min_loss, double eta, double sum_weights,
-                      size_t num_weights) {
-  return min_loss - std::log(sum_weights / num_weights) / eta;
+double ComputeMixLoss(const MixLossInfo& info) {
+  return info.min_loss -
+         std::log(info.sum_weights / info.num_weights) / info.eta;
 }
 
 void dxpy(absl::Span<const double> src, absl::Span<double> acc) {
@@ -57,9 +57,7 @@ void DriveOneIteration(absl::Span<CoverConstraint> constraints,
   const PrepareWeightsState prepare_weights =
       PrepareAllWeights(constraints, *state);
 
-  const double prev_mix_loss =
-      ComputeMixLoss(prepare_weights.min_loss, prepare_weights.eta,
-                     prepare_weights.sum_weights, prepare_weights.num_weights);
+  const double prev_mix_loss = ComputeMixLoss(prepare_weights.mix_loss);
 
   double target_objective_value = state->best_bound;
   if (std::isfinite(state->best_bound)) {
@@ -89,7 +87,7 @@ void DriveOneIteration(absl::Span<CoverConstraint> constraints,
   }
 
   const double observed_loss =
-      master_sol.feasibility / prepare_weights.sum_weights;
+      master_sol.feasibility / prepare_weights.mix_loss.sum_weights;
   state->sum_solution_feasibility += observed_loss;
 
   ObserveLossState observe_state(master_sol.solution);
@@ -100,16 +98,15 @@ void DriveOneIteration(absl::Span<CoverConstraint> constraints,
   state->prev_min_loss = observe_state.min_loss;
   state->prev_max_loss = observe_state.max_loss;
 
-  UpdateMixLossState update_state(observe_state.min_loss, prepare_weights.eta);
+  UpdateMixLossState update_state(observe_state.min_loss,
+                                  prepare_weights.mix_loss.eta);
   for (auto& constraint : constraints) {
     constraint.UpdateMixLoss(&update_state);
   }
 
-  state->prev_num_non_zero = update_state.num_weights;
+  state->prev_num_non_zero = update_state.mix_loss.num_weights;
 
-  const double mix_loss =
-      ComputeMixLoss(update_state.min_loss, update_state.eta,
-                     update_state.sum_weights, update_state.num_weights);
+  const double mix_loss = ComputeMixLoss(update_state.mix_loss);
 
   state->sum_mix_gap +=
       std::max(0.0, observed_loss - (mix_loss - prev_mix_loss));
