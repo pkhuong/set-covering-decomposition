@@ -4,7 +4,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <iostream>
 #include <tuple>
 
 #include "knapsack-impl.h"
