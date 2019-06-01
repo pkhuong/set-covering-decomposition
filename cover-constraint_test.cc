@@ -7,6 +7,7 @@
 
 using ::testing::AnyOf;
 using ::testing::DoubleEq;
+using ::testing::DoubleNear;
 using ::testing::ElementsAre;
 
 // Tests are a bit sucky because the interaction with constraints is
@@ -64,9 +65,10 @@ TEST(CoverConstraint, FirstIteration) {
 
     constraint.UpdateMixLoss(&update_state);
     EXPECT_EQ(update_state.mix_loss.num_weights, 2 + 3);
-    EXPECT_EQ(update_state.mix_loss.sum_weights,
-              4.0 + std::exp(2 * (-1.5 - -0.9)) + std::exp(2 * (-1.5 - 1.0)) +
-                  std::exp(2 * -1.5));
+    EXPECT_THAT(update_state.mix_loss.sum_weights,
+                DoubleNear(4.0 + std::exp(2 * (-1.5 - -0.9)) +
+                               std::exp(2 * (-1.5 - 1.0)) + std::exp(2 * -1.5),
+                           1e-5));
   }
 }
 
@@ -136,7 +138,9 @@ TEST(CoverConstraint, SecondInfinityIteration) {
     static constexpr double tenth = -1.0 + 0.9;
     constraint.PrepareWeights(&prep_state);
     EXPECT_THAT(prep_state.scratch,
-                ElementsAre(std::exp(tenth), std::exp(-2.0), std::exp(-1.0)));
+                ElementsAre(DoubleNear(std::exp(tenth), 1e-5),
+                            DoubleNear(std::exp(-2.0), 1e-5),
+                            DoubleNear(std::exp(-1.0), 1e-5)));
 
     // The last round had the master knapsack problem pick 1 and 2, and
     // a tiny bit of 0.
@@ -145,12 +149,15 @@ TEST(CoverConstraint, SecondInfinityIteration) {
     // pick 1.
     EXPECT_EQ(constraint.last_solution(), 1);
     EXPECT_EQ(prep_state.mix_loss.num_weights, 3);
-    EXPECT_EQ(prep_state.mix_loss.sum_weights,
-              std::exp(tenth) + std::exp(-2.0) + std::exp(-1.0));
+    EXPECT_THAT(
+        prep_state.mix_loss.sum_weights,
+        DoubleNear(std::exp(tenth) + std::exp(-2.0) + std::exp(-1.0), 1e-5));
     EXPECT_THAT(prep_state.knapsack_weights,
-                ElementsAre(-0.5 - std::exp(tenth), -0.5 - std::exp(-2.0), -0.5,
-                            -0.5 - std::exp(-1.0)));
-    EXPECT_EQ(prep_state.knapsack_rhs, -1.0 - std::exp(-2.0));
+                ElementsAre(DoubleNear(-0.5 - std::exp(tenth), 1e-5),
+                            DoubleNear(-0.5 - std::exp(-2.0), 1e-5), -0.5,
+                            DoubleNear(-0.5 - std::exp(-1.0), 1e-5)));
+    EXPECT_THAT(prep_state.knapsack_rhs,
+                DoubleNear(-1.0 - std::exp(-2.0), 1e-5));
   }
 
   // Make sure we detect feasibility of this individual relaxation.
@@ -199,7 +206,7 @@ TEST(CoverConstraint, SecondInfinityIteration) {
     update_state.mix_loss.sum_weights = 0.5;
     constraint.UpdateMixLoss(&update_state);
     EXPECT_EQ(update_state.mix_loss.num_weights, 5);
-    EXPECT_EQ(update_state.mix_loss.sum_weights,
-              0.5 + std::exp(0.9 - 1.0) + 1.0 + 1.0);
+    EXPECT_THAT(update_state.mix_loss.sum_weights,
+                DoubleNear(0.5 + std::exp(0.9 - 1.0) + 1.0 + 1.0, 1e-5));
   }
 }

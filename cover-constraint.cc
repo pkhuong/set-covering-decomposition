@@ -6,6 +6,7 @@
 #include <cmath>
 
 #include "absl/algorithm/container.h"
+#include "vec.h"
 
 namespace {
 double dsum(absl::Span<const double> vec) {
@@ -126,12 +127,12 @@ void CoverConstraint::UpdateMixLoss(UpdateMixLossState* state) const {
 void CoverConstraint::PopulateWeights(MixLossInfo* info,
                                       std::vector<double>* weights) const {
   // Ensure geometric growth works despite repeated `resize` calls.
-  if (potential_tours_.size() > weights->capacity()) {
-    weights->reserve(
-        std::max(2 * weights->capacity(), potential_tours_.size()));
+  const size_t padded_size = potential_tours_.size() + 7;
+  if (padded_size > weights->capacity()) {
+    weights->reserve(std::max(2 * weights->capacity(), padded_size));
   }
 
-  weights->resize(potential_tours_.size());
+  weights->resize(padded_size);
   const double eta = info->eta;
   const double min_loss = info->min_loss;
   if (std::isinf(eta)) {
@@ -139,11 +140,16 @@ void CoverConstraint::PopulateWeights(MixLossInfo* info,
       (*weights)[i] = (loss_[i] == min_loss) ? 1.0 : 0.0;
     }
   } else {
+#ifdef NO_VECTORIZE
     for (size_t i = 0, n = loss_.size(); i < n; ++i) {
       (*weights)[i] = std::exp(-eta * (loss_[i] - min_loss));
     }
+#else
+    internal::ApplyHedgeLoss(loss_, min_loss, eta, absl::MakeSpan(*weights));
+#endif
   }
 
+  weights->resize(potential_tours_.size());
   info->num_weights += weights->size();
   info->sum_weights += dsum(*weights);
 }

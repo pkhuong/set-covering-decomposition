@@ -220,6 +220,7 @@ TEST(Driver, TwoIterationsWithExactLowerBound) {
   const double kWeight = std::exp(-std::log(4) / (2 * kDelta));
   EXPECT_THAT(
       state.sum_solution_feasibility,
-      DoubleEq((1.5 - 1 / 8.0) / (2 + 1 / 8.0) +
-               (1 + 2.0 / 3 * kWeight - 2 * kWeight) / (1 + 3 * kWeight)));
+      DoubleNear((1.5 - 1 / 8.0) / (2 + 1 / 8.0) +
+                     (1 + 2.0 / 3 * kWeight - 2 * kWeight) / (1 + 3 * kWeight),
+                 1e-6));
 }

@@ -45,6 +45,7 @@ cc_library(
     "@com_google_absl//absl/algorithm:container",
     "@com_google_absl//absl/container:fixed_array",
     "@com_google_absl//absl/types:span",
+    ":vec",
   ]
 )
 
