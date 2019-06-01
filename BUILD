@@ -28,6 +28,16 @@ cc_test(
 )
 
 cc_library(
+  name = "vec",
+  hdrs = ["vec.h"],
+  srcs = ["vec.cc", "avx_mathfun.h"],
+  copts = ["-O3", "-march=native", "-mtune=native"],
+  deps = [
+    "@com_google_absl//absl/types:span",
+  ],
+)
+
+cc_library(
   name = "cover-constraint",
   hdrs = ["cover-constraint.h"],
   srcs = ["cover-constraint.cc"],
