@@ -8,9 +8,9 @@
 #include <random>
 
 static constexpr double kFeasEps = 5e-3;
-static constexpr size_t kNumTours = 1000;
-static constexpr size_t kNumLocs = 1000;
-static constexpr size_t kMaxTourPerLoc = 20;
+static constexpr size_t kNumTours = 1000 * 1000;
+static constexpr size_t kNumLocs = 10000;
+static constexpr size_t kMaxTourPerLoc = 2100;
 static constexpr size_t kMaxIter = 100000;
 static constexpr bool kCheckFeasible = false;
 
@@ -32,11 +32,15 @@ int main(int, char**) {
     }
 
     for (size_t i = 0; i < kNumLocs; ++i) {
-      std::shuffle(tour_ids.begin(), tour_ids.end(), rng);
-
       coefs.emplace_back();
       std::vector<uint32_t>& dst = coefs.back();
+
+      // Perform a partial Fisher-Yates shuffle and consume
+      // newly-generated elements as they come.
+      std::uniform_real_distribution<> u01(0.0, 1.0);
       for (size_t j = 0, n = num_tour_distribution(rng); j < n; ++j) {
+        size_t src = j + (tour_ids.size() - j) * u01(rng);
+        std::swap(tour_ids[j], tour_ids[src]);
         dst.push_back(tour_ids[j]);
       }
     }
