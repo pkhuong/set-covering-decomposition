@@ -97,12 +97,18 @@ void CoverConstraint::PrepareWeights(PrepareWeightsState* state) {
   sdec(potential_tours_, scratch, absl::MakeSpan(state->knapsack_weights));
 }
 
+#define OBSERVE_LOSS_PREFETCH_DISTANCE 32
+
 void CoverConstraint::ObserveLoss(ObserveLossState* state) {
   const double infeasibility =
       1.0 - state->knapsack_solution[potential_tours_[last_solution_]];
 
   loss_[last_solution_] -= 1;
   for (size_t i = 0, n = potential_tours_.size(); i < n; ++i) {
+#ifdef OBSERVE_LOSS_PREFETCH_DISTANCE
+    __builtin_prefetch(&state->knapsack_solution[potential_tours_[std::min(
+        n - 1, i + OBSERVE_LOSS_PREFETCH_DISTANCE)]]);
+#endif
     loss_[i] += state->knapsack_solution[potential_tours_[i]];
   }
 
