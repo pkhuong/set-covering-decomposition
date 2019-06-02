@@ -20,24 +20,6 @@ double dsum(absl::Span<const double> vec) {
   return acc;
 }
 
-double dmin(absl::Span<const double> vec) {
-  double acc = std::numeric_limits<double>::max();
-  for (double x : vec) {
-    acc = (x < acc) ? x : acc;
-  }
-
-  return acc;
-}
-
-double dmax(absl::Span<const double> vec) {
-  double acc = std::numeric_limits<double>::lowest();
-  for (double x : vec) {
-    acc = (x > acc) ? x : acc;
-  }
-
-  return acc;
-}
-
 void vinc(absl::Span<const double> src, absl::Span<double> dst) {
   for (size_t i = 0; i < src.size(); ++i) {
     dst[i] += src[i];
@@ -106,18 +88,24 @@ void CoverConstraint::ObserveLoss(ObserveLossState* state) {
   const double infeasibility =
       1.0 - state->knapsack_solution[potential_tours_[last_solution_]];
 
+  double min_loss = std::numeric_limits<double>::max();
+  double max_loss = std::numeric_limits<double>::lowest();
+
   loss_[last_solution_] -= 1;
   for (size_t i = 0, n = potential_tours_.size(); i < n; ++i) {
 #ifdef PREFETCH_DISTANCE
     __builtin_prefetch(&state->knapsack_solution[potential_tours_[std::min(
         n - 1, i + PREFETCH_DISTANCE)]]);
 #endif
-    loss_[i] += state->knapsack_solution[potential_tours_[i]];
+    double cur_loss = loss_[i] + state->knapsack_solution[potential_tours_[i]];
+    loss_[i] = cur_loss;
+    min_loss = (cur_loss < min_loss) ? cur_loss : min_loss;
+    max_loss = (cur_loss > max_loss) ? cur_loss : max_loss;
   }
 
   ObserveLossState current_loss(state->knapsack_solution);
-  current_loss.min_loss = dmin(loss_);
-  current_loss.max_loss = dmax(loss_);
+  current_loss.min_loss = min_loss;
+  current_loss.max_loss = max_loss;
   current_loss.max_infeasibility = infeasibility;
 
   state->Merge(current_loss);
