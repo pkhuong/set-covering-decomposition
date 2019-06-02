@@ -77,11 +77,11 @@ void CoverConstraint::PrepareWeights(PrepareWeightsState* state) {
     return;
   }
 
-  PopulateWeights(&state->mix_loss, &scratch);
+  PopulateWeights(&state->mix_loss, &scratch,
+                  absl::MakeSpan(state->knapsack_weights));
   state->knapsack_rhs -= SolveSubproblem(scratch);
 
   assert(state->knapsack_weights.size() > potential_tours_.back());
-  sdec(potential_tours_, scratch, absl::MakeSpan(state->knapsack_weights));
 }
 
 void CoverConstraint::ObserveLoss(ObserveLossState* state) {
@@ -121,8 +121,9 @@ void CoverConstraint::UpdateMixLoss(UpdateMixLossState* state) const {
   PopulateWeights(&state->mix_loss, &scratch);
 }
 
-void CoverConstraint::PopulateWeights(MixLossInfo* info,
-                                      std::vector<double>* weights) const {
+void CoverConstraint::PopulateWeights(
+    MixLossInfo* info, std::vector<double>* weights,
+    absl::optional<absl::Span<double>> to_decrement) const {
   // Ensure geometric growth works despite repeated `resize` calls.
   const size_t padded_size = potential_tours_.size() + 7;
   if (padded_size > weights->capacity()) {
@@ -139,6 +140,9 @@ void CoverConstraint::PopulateWeights(MixLossInfo* info,
     }
 
     sum_weights = dsum(*weights);
+    if (to_decrement.has_value()) {
+      sdec(potential_tours_, *weights, to_decrement.value());
+    }
   } else {
 #ifdef NO_VECTORIZE
     for (size_t i = 0, n = loss_.size(); i < n; ++i) {
@@ -146,9 +150,28 @@ void CoverConstraint::PopulateWeights(MixLossInfo* info,
     }
 
     sum_weights = dsum(*weights);
+    if (to_decrement.has_value()) {
+      sdec(potential_tours_, *weights, to_decrement.value());
+    }
 #else
-    sum_weights = internal::ApplyHedgeLoss(loss_, min_loss, eta,
-                                           absl::MakeSpan(*weights));
+
+    if (to_decrement.has_value()) {
+      const auto dst = to_decrement.value();
+      const size_t n = potential_tours_.size();
+      sum_weights = internal::ApplyHedgeLossWithForEach(
+          loss_, min_loss, eta,
+          [&](size_t i, double value) {
+#ifdef PREFETCH_DISTANCE
+            __builtin_prefetch(
+                &dst[potential_tours_[std::min(n - 1, i + PREFETCH_DISTANCE)]]);
+#endif
+            dst[potential_tours_[i]] -= value;
+          },
+          absl::MakeSpan(*weights));
+    } else {
+      sum_weights = internal::ApplyHedgeLoss(loss_, min_loss, eta,
+                                             absl::MakeSpan(*weights));
+    }
 #endif
   }
 

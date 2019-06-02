@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "absl/container/fixed_array.h"
+#include "absl/types/optional.h"
 #include "absl/types/span.h"
 
 struct MixLossInfo {
@@ -93,7 +94,12 @@ class CoverConstraint {
  private:
   // Populates `weights` with the un-normalised weights for this iteration, and
   // updates the accumulators in `info`.
-  void PopulateWeights(MixLossInfo* info, std::vector<double>* weights) const;
+  //
+  // If `to_decrement` is provided, to_decerement[potential_tours_[i]] -=
+  // (*weights)[i];
+  void PopulateWeights(
+      MixLossInfo* info, std::vector<double>* weights,
+      absl::optional<absl::Span<double>> to_decrement = absl::nullopt) const;
 
   // Finds the min weight solution to this covering constraint, and
   // stores it in `last_solution`.
