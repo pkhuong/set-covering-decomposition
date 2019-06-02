@@ -15,7 +15,7 @@ using ::internal::PartitionInstance;
 using ::internal::PartitionResult;
 using ::internal::PartitionEntries;
 
-KnapsackSolution::KnapsackSolution(std::vector<double> solution_,
+KnapsackSolution::KnapsackSolution(BigVec<double> solution_,
                                    double objective_value_, double feasibility_,
                                    bool feasible_)
     : solution(std::move(solution_)),
@@ -49,7 +49,7 @@ std::ostream& operator<<(std::ostream& stream,
 KnapsackSolution SolveKnapsack(absl::Span<const double> obj_values,
                                absl::Span<const double> weights, double rhs,
                                double eps, double best_bound,
-                               std::vector<double> scratch) {
+                               BigVecArena* arena) {
   assert(std::isfinite(rhs));
   assert(obj_values.size() == weights.size());
   assert(eps >= 0);
@@ -58,8 +58,7 @@ KnapsackSolution SolveKnapsack(absl::Span<const double> obj_values,
     assert(weight <= 0);
   }
 
-  KnapsackSolution ret(std::move(scratch));
-  ret.solution.resize(weights.size());
+  KnapsackSolution ret(arena->Create<double>(weights.size(), 0.0));
   // We obtain a regular max / <= knapsack by flipping the objective function.
   // The weights are negative, so the goal is to exclude items.
   NormalizedInstance knapsack =

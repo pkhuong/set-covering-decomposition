@@ -78,10 +78,11 @@ double UpdateStateWithNewRelaxedSolution(
 
   // Borrow storage for the solution, and move it back into place
   // before returning.
+  state->last_solution.clear();
   KnapsackSolution master_sol =
       SolveKnapsack(state->obj_values, prepare_weights.knapsack_weights,
                     prepare_weights.knapsack_rhs, kEps, target_objective_value,
-                    std::move(state->last_solution));
+                    &state->arena);
 
   dxpy(master_sol.solution, absl::MakeSpan(state->sum_solutions));
   state->sum_solution_value += master_sol.objective_value;

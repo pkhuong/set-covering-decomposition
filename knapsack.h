@@ -5,9 +5,10 @@
 #include <vector>
 
 #include "absl/types/span.h"
+#include "big-vec.h"
 
 struct KnapsackSolution {
-  explicit KnapsackSolution(std::vector<double> solution_ = {},
+  explicit KnapsackSolution(BigVec<double> solution_,
                             double objective_value_ = 0,
                             double feasibility_ = 0, bool feasible_ = false);
 
@@ -15,7 +16,7 @@ struct KnapsackSolution {
   friend std::ostream& operator<<(std::ostream& stream,
                                   const KnapsackSolution& solution);
 
-  std::vector<double> solution;
+  BigVec<double> solution;
   double objective_value{0};
   double feasibility{0};
   bool feasible{false};
@@ -36,8 +37,8 @@ struct KnapsackSolution {
 // eps is the allowed leeway on feasibility.
 //
 // `scratch` is used to pre-allocate the solution vector in the return value.
-KnapsackSolution SolveKnapsack(absl::Span<const double> obj_values,
-                               absl::Span<const double> weights, double rhs,
-                               double eps, double best_bound,
-                               std::vector<double> scratch = {});
+KnapsackSolution SolveKnapsack(
+    absl::Span<const double> obj_values, absl::Span<const double> weights,
+    double rhs, double eps, double best_bound,
+    BigVecArena* arena = &BigVecArena::default_instance());
 #endif /* !KNAPSACK_H */

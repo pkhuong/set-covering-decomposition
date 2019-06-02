@@ -33,7 +33,7 @@ struct DriverState {
   double max_last_solution_infeasibility{
       std::numeric_limits<double>::infinity()};
   double last_solution_value{-std::numeric_limits<double>::infinity()};
-  std::vector<double> last_solution;
+  BigVec<double> last_solution;
 
   bool feasible{true};
 };

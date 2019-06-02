@@ -78,6 +78,7 @@ cc_library(
   hdrs = ["knapsack.h"],
   srcs = ["knapsack.cc"],
   deps = [
+    ":big-vec",
     ":knapsack-impl",
     "@com_google_absl//absl/container:flat_hash_set",
     "@com_google_absl//absl/types:span",

@@ -8,6 +8,8 @@ using ::testing::ElementsAre;
 static constexpr double kEps = 1e-10;
 
 TEST(Knapsack, Empty) {
+  BigVecArenaContext ctx;
+
   EXPECT_EQ(SolveKnapsack({}, {}, 0, kEps, 0),
             KnapsackSolution({}, 0, 0, true));
 
@@ -28,6 +30,8 @@ TEST(Knapsack, Empty) {
 }
 
 TEST(Knapsack, Singleton) {
+  BigVecArenaContext ctx;
+
   // Take the whole thing to hit feasibility.
   EXPECT_EQ(SolveKnapsack({1}, {-2}, -2, kEps, 0),
             KnapsackSolution({1.0}, 1, 0, true));
@@ -54,6 +58,8 @@ TEST(Knapsack, Singleton) {
 }
 
 TEST(Knapsack, Sign) {
+  BigVecArenaContext ctx;
+
   // Doesn't matter what the lower bound says: we always take these, they're
   // also good for feasibility.
   EXPECT_EQ(SolveKnapsack({-1}, {-2}, 0, kEps, -10),
