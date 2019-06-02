@@ -28,16 +28,6 @@ cc_test(
 )
 
 cc_library(
-  name = "vec",
-  hdrs = ["vec.h"],
-  srcs = ["vec.cc", "avx_mathfun.h"],
-  copts = ["-O3", "-march=native", "-mtune=native"],
-  deps = [
-    "@com_google_absl//absl/types:span",
-  ],
-)
-
-cc_library(
   name = "cover-constraint",
   hdrs = ["cover-constraint.h"],
   srcs = ["cover-constraint.cc"],
@@ -63,6 +53,7 @@ cc_library(
   hdrs = ["knapsack-impl.h"],
   srcs = ["knapsack-impl.cc"],
   deps = [
+    ":prng",
     "@com_google_absl//absl/container:flat_hash_set",
     "@com_google_absl//absl/types:span",
   ]
@@ -97,4 +88,25 @@ cc_test(
     "@com_google_googletest//:gtest",
     "@com_google_googletest//:gtest_main",
   ]
+)
+
+cc_library(
+  name = "vec",
+  hdrs = ["vec.h"],
+  srcs = ["vec.cc", "avx_mathfun.h"],
+  copts = ["-O3", "-march=native", "-mtune=native"],
+  deps = [
+    "@com_google_absl//absl/types:span",
+  ],
+)
+
+cc_library(
+  name = "prng",
+  hdrs = ["prng.h"],
+  srcs = ["prng.cc"],
+  deps = [
+    "@com_google_absl//absl/base:core_headers",
+    "@com_google_absl//absl/synchronization",
+    "@com_google_absl//absl/types:optional",
+  ],
 )
