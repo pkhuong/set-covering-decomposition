@@ -18,7 +18,7 @@ class xs256 {
   uint64_t Uniform(uint64_t limit) {
     unsigned __int128 tmp = limit;
 
-    limit *= (*this)();
+    tmp *= (*this)();
     return tmp >> 64;
   }
 
