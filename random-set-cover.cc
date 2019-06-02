@@ -52,7 +52,7 @@ int main(int, char**) {
   }
 
   DriverState state(cost);
-  const std::vector<double>* solution = nullptr;
+  absl::Span<const double> solution;
   double solution_scale = 1.0;
   for (size_t i = 0; i < kMaxIter; ++i) {
     DriveOneIteration(absl::MakeSpan(constraints), &state);
@@ -85,7 +85,7 @@ int main(int, char**) {
 
     if (relaxation_optimal) {
       std::cout << "Feasible!\n";
-      solution = &state.last_solution;
+      solution = absl::MakeSpan(state.last_solution);
       break;
     }
 
@@ -94,21 +94,21 @@ int main(int, char**) {
     }
   }
 
-  if (solution == nullptr) {
-    solution = &state.sum_solutions;
+  if (solution.empty()) {
+    solution = absl::MakeSpan(state.sum_solutions);
     solution_scale = 1.0 / state.num_iterations;
   }
 
   double obj_value = 0.0;
-  for (size_t i = 0; i < solution->size(); ++i) {
-    obj_value += solution_scale * (*solution)[i] * cost[i];
+  for (size_t i = 0; i < solution.size(); ++i) {
+    obj_value += solution_scale * solution[i] * cost[i];
   }
 
   double least_coverage = std::numeric_limits<double>::infinity();
   for (const auto& tours : coefs) {
     double coverage = 0.0;
     for (uint32_t tour : tours) {
-      coverage += solution_scale * (*solution)[tour];
+      coverage += solution_scale * solution[tour];
     }
 
     least_coverage = std::min(least_coverage, coverage);
