@@ -427,7 +427,9 @@ TEST_P(PartitionEntriesLarge, EqualRanges) {
     // Should be a permutation.
     EXPECT_THAT(entries, UnorderedElementsAreArray(init_entries));
 
-    EXPECT_LE(result.partition_index, 1 + 3 * n / 2);
+    // There are many ways to partition what's left after the most valuable
+    // items are taken, so add some freedom here.
+    EXPECT_LE(result.partition_index, 2 + 3 * n / 2);
     EXPECT_LE(result.remaining_value, entries[result.partition_index].value);
 
     double sum_values = 0;
