@@ -8,6 +8,8 @@
 #include "absl/algorithm/container.h"
 #include "vec.h"
 
+#define PREFETCH_DISTANCE 32
+
 namespace {
 double dsum(absl::Span<const double> vec) {
   double acc = 0;
@@ -45,6 +47,9 @@ void vinc(absl::Span<const double> src, absl::Span<double> dst) {
 void sdec(absl::Span<const uint32_t> indices, absl::Span<const double> weights,
           absl::Span<double> dst) {
   for (size_t i = 0, n = indices.size(); i < n; ++i) {
+#ifdef PREFETCH_DISTANCE
+    __builtin_prefetch(&dst[indices[std::min(n - 1, i + PREFETCH_DISTANCE)]]);
+#endif
     dst[indices[i]] -= weights[i];
   }
 }
@@ -97,17 +102,15 @@ void CoverConstraint::PrepareWeights(PrepareWeightsState* state) {
   sdec(potential_tours_, scratch, absl::MakeSpan(state->knapsack_weights));
 }
 
-#define OBSERVE_LOSS_PREFETCH_DISTANCE 32
-
 void CoverConstraint::ObserveLoss(ObserveLossState* state) {
   const double infeasibility =
       1.0 - state->knapsack_solution[potential_tours_[last_solution_]];
 
   loss_[last_solution_] -= 1;
   for (size_t i = 0, n = potential_tours_.size(); i < n; ++i) {
-#ifdef OBSERVE_LOSS_PREFETCH_DISTANCE
+#ifdef PREFETCH_DISTANCE
     __builtin_prefetch(&state->knapsack_solution[potential_tours_[std::min(
-        n - 1, i + OBSERVE_LOSS_PREFETCH_DISTANCE)]]);
+        n - 1, i + PREFETCH_DISTANCE)]]);
 #endif
     loss_[i] += state->knapsack_solution[potential_tours_[i]];
   }
