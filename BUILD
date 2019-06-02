@@ -34,6 +34,7 @@ cc_library(
   deps = [
     "@com_google_absl//absl/algorithm:container",
     "@com_google_absl//absl/container:fixed_array",
+    "@com_google_absl//absl/memory:memory",
     "@com_google_absl//absl/types:optional",
     "@com_google_absl//absl/types:span",
     ":vec",

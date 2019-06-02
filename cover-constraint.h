@@ -1,11 +1,15 @@
 #ifndef COVER_CONSTRAINT_H
 #define COVER_CONSTRAINT_H
+#include <assert.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <vector>
 
 #include "absl/container/fixed_array.h"
+#include "absl/memory/memory.h"
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
 
@@ -24,15 +28,33 @@ struct MixLossInfo {
 struct PrepareWeightsState {
   explicit PrepareWeightsState(size_t num_knapsack_weights, double min_loss,
                                double eta)
-      : mix_loss(min_loss, eta), knapsack_weights(num_knapsack_weights, 0.0) {}
+      : PrepareWeightsState(
+            absl::FixedArray<double, 0>(num_knapsack_weights, 0.0), min_loss,
+            eta) {}
+
+  template <typename T, typename = typename T::value_type>
+  explicit PrepareWeightsState(T data, double min_loss, double eta)
+      : mix_loss(min_loss, eta) {
+    auto backing = std::make_shared<T>(std::move(data));
+    knapsack_weights = absl::MakeSpan(*backing);
+    backing_storage = std::move(backing);
+  }
+
+  // Not copyable, movable.
+  PrepareWeightsState(const PrepareWeightsState&) = delete;
+  PrepareWeightsState(PrepareWeightsState&&) = default;
+  PrepareWeightsState& operator=(const PrepareWeightsState&) = delete;
+  PrepareWeightsState& operator=(PrepareWeightsState&&) = default;
 
   MixLossInfo mix_loss;
   std::vector<double> scratch;
 
-  absl::FixedArray<double, 0> knapsack_weights;
+  absl::Span<double> knapsack_weights;
   double knapsack_rhs{0};
 
   void Merge(const PrepareWeightsState& in);
+
+  std::shared_ptr<void> backing_storage;
 };
 
 struct ObserveLossState {
