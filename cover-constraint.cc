@@ -99,8 +99,8 @@ void CoverConstraint::ObserveLoss(ObserveLossState* state) {
 #endif
     double cur_loss = loss_[i] + state->knapsack_solution[potential_tours_[i]];
     loss_[i] = cur_loss;
-    min_loss = (cur_loss < min_loss) ? cur_loss : min_loss;
-    max_loss = (cur_loss > max_loss) ? cur_loss : max_loss;
+    min_loss = (min_loss < cur_loss) ? min_loss : cur_loss;
+    max_loss = (max_loss > cur_loss) ? max_loss : cur_loss;
   }
 
   ObserveLossState current_loss(state->knapsack_solution);
