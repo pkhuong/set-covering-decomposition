@@ -115,7 +115,7 @@ typedef union imm_xmm_union {
   }
 
 #define AVX2_BITOP_USING_SSE2(fn)                        \
-  static inline v8si _mm256_##fn(v8si x, int a) {        \
+  static inline v8si emu_mm256_##fn(v8si x, int a) {     \
     /* use SSE2 instruction to perform the bitop AVX2 */ \
     v4si x1, x2;                                         \
     v8si ret;                                            \
@@ -127,11 +127,14 @@ typedef union imm_xmm_union {
   }
 
 #warning "Using SSE2 to perform AVX2 bitshift ops"
+
 AVX2_BITOP_USING_SSE2(slli_epi32)
 AVX2_BITOP_USING_SSE2(srli_epi32)
+#define _mm256_slli_epi32 emu_mm256_slli_epi32
+#define _mm256_srli_epi32 emu_mm256_srli_epi32
 
 #define AVX2_INTOP_USING_SSE2(fn)                                     \
-  static inline v8si _mm256_##fn(v8si x, v8si y) {                    \
+  static inline v8si emu_mm256_##fn(v8si x, v8si y) {                 \
     /* use SSE2 instructions to perform the AVX2 integer operation */ \
     v4si x1, x2;                                                      \
     v4si y1, y2;                                                      \
@@ -150,6 +153,12 @@ AVX2_INTOP_USING_SSE2(andnot_si128)
 AVX2_INTOP_USING_SSE2(cmpeq_epi32)
 AVX2_INTOP_USING_SSE2(sub_epi32)
 AVX2_INTOP_USING_SSE2(add_epi32)
+
+#define _mm256_and_si128 emu_mm256_and_si128
+#define _mm256_andnot_si128 emu_mm256_andnot_si128
+#define _mm256_cmpeq_epi32emu_mm256_cmpeq_epi32
+#define _mm256_sub_epi32 emu_mm256_sub_epi32
+#define _mm256_add_epi32 emu_mm256_add_epi32
 
 #else
 
