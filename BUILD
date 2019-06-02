@@ -112,3 +112,14 @@ cc_library(
     "@com_google_absl//absl/types:optional",
   ],
 )
+
+cc_library(
+  name = "big-vec",
+  hdrs = ["big-vec.h"],
+  srcs = ["big-vec.cc"],
+  deps = [
+    "@com_google_absl//absl/base:core_headers",
+    "@com_google_absl//absl/container:flat_hash_map",
+    "@com_google_absl//absl/synchronization",
+  ],
+)
