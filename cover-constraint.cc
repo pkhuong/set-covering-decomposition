@@ -132,23 +132,29 @@ void CoverConstraint::PopulateWeights(MixLossInfo* info,
   weights->resize(padded_size);
   const double eta = info->eta;
   const double min_loss = info->min_loss;
+  double sum_weights = 0;
   if (std::isinf(eta)) {
     for (size_t i = 0, n = loss_.size(); i < n; ++i) {
       (*weights)[i] = (loss_[i] == min_loss) ? 1.0 : 0.0;
     }
+
+    sum_weights = dsum(*weights);
   } else {
 #ifdef NO_VECTORIZE
     for (size_t i = 0, n = loss_.size(); i < n; ++i) {
       (*weights)[i] = std::exp(-eta * (loss_[i] - min_loss));
     }
+
+    sum_weights = dsum(*weights);
 #else
-    internal::ApplyHedgeLoss(loss_, min_loss, eta, absl::MakeSpan(*weights));
+    sum_weights = internal::ApplyHedgeLoss(loss_, min_loss, eta,
+                                           absl::MakeSpan(*weights));
 #endif
   }
 
   weights->resize(potential_tours_.size());
   info->num_weights += weights->size();
-  info->sum_weights += dsum(*weights);
+  info->sum_weights += sum_weights;
 }
 
 // The weight vector is never empty nor negative, so we're looking for (any)
