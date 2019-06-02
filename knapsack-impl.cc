@@ -7,6 +7,7 @@
 #include <tuple>
 
 #include "absl/algorithm/container.h"
+#include "prng.h"
 
 namespace internal {
 bool NormalizedEntry::operator==(const NormalizedEntry& other) const {
@@ -48,6 +49,9 @@ NormalizedInstance NormalizeKnapsack(absl::Span<const double> obj_values,
 }
 
 namespace {
+PartitionResult PartitionEntriesDispatch(PartitionInstance instance,
+                                         xs256* prng);
+
 // Trivial implementation: sort and scan.
 PartitionResult PartitionEntriesBaseCase(PartitionInstance instance) {
   absl::c_sort(instance.entries,
@@ -83,12 +87,18 @@ PartitionResult PartitionEntriesBaseCase(PartitionInstance instance) {
   return PartitionResult{i, remaining_weight, remaining_value};
 }
 
-double FindPivot(absl::Span<const NormalizedEntry> entries) {
+double FindPivot(absl::Span<const NormalizedEntry> entries, xs256* prng) {
   assert(!entries.empty());
-  // XXX: use a real prng, multiple indices, median of medians, smth.
-  const size_t index = entries.size() * (random() * 1.0 / (RAND_MAX + 1.0));
-  const auto& entry = entries[index];
-  return entry.value / entry.weight;
+
+  std::array<double, 3> ratios;
+  for (double& ratio : ratios) {
+    const size_t index = prng->Uniform(entries.size());
+    const auto& entry = entries[index];
+    ratio = entry.value / entry.weight;
+  }
+
+  absl::c_sort(ratios);
+  return ratios[1];
 }
 
 // Recursive implementation: partition and search in either the left or right
@@ -96,8 +106,9 @@ double FindPivot(absl::Span<const NormalizedEntry> entries) {
 //
 // This will do very badly with equally good entries (e.g., the
 // PartitionEntriesLarge.EqualRanges test).
-PartitionResult PartitionEntriesDivision(PartitionInstance instance) {
-  const double pivot = FindPivot(instance.entries);
+PartitionResult PartitionEntriesDivision(PartitionInstance instance,
+                                         xs256* prng) {
+  const double pivot = FindPivot(instance.entries, prng);
 
   // We want elements better or equal to pivot to the left.
   // That is, if entry.value / entry.weight >= pivot
@@ -121,7 +132,7 @@ PartitionResult PartitionEntriesDivision(PartitionInstance instance) {
   // The left half already violates one of the conditions. Keep looking there.
   if (left_weight > instance.max_weight || left_value > instance.max_value) {
     instance.entries = left_span;
-    return PartitionEntries(instance);
+    return PartitionEntriesDispatch(instance, prng);
   }
 
   instance.entries = right_span;
@@ -130,11 +141,28 @@ PartitionResult PartitionEntriesDivision(PartitionInstance instance) {
   // left_value <= instance.max_value
   instance.max_value -= left_value;
   instance.initial_offset += first_right;
-  return PartitionEntries(instance);
+  return PartitionEntriesDispatch(instance, prng);
 }
 
 size_t Log2Ceiling(size_t n) {
   return CHAR_BIT * sizeof(unsigned long long) - __builtin_clzll(n);
+}
+
+PartitionResult PartitionEntriesDispatch(PartitionInstance instance,
+                                         xs256* prng) {
+  if (instance.entries.empty() || instance.max_weight <= 0 ||
+      instance.max_value <= 0) {
+    return PartitionResult{instance.initial_offset, instance.max_weight,
+                           instance.max_value};
+  }
+
+  if (instance.max_iter <= 1 ||
+      instance.entries.size() < instance.min_partition_size) {
+    return PartitionEntriesBaseCase(instance);
+  }
+
+  --instance.max_iter;
+  return PartitionEntriesDivision(instance, prng);
 }
 }  // namespace
 
@@ -156,18 +184,7 @@ PartitionInstance::PartitionInstance(absl::Span<NormalizedEntry> entries_,
       min_partition_size(min_partition_size_) {}
 
 PartitionResult PartitionEntries(PartitionInstance instance) {
-  if (instance.entries.empty() || instance.max_weight <= 0 ||
-      instance.max_value <= 0) {
-    return PartitionResult{instance.initial_offset, instance.max_weight,
-                           instance.max_value};
-  }
-
-  if (instance.max_iter <= 1 ||
-      instance.entries.size() < instance.min_partition_size) {
-    return PartitionEntriesBaseCase(instance);
-  }
-
-  --instance.max_iter;
-  return PartitionEntriesDivision(instance);
+  xs256 prng;
+  return PartitionEntriesDispatch(instance, &prng);
 }
 }  // namespace internal
