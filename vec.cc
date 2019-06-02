@@ -1,6 +1,6 @@
 #include "vec.h"
 
-#include "assert.h"
+#include <assert.h>
 #include <immintrin.h>
 
 #include <array>
