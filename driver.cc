@@ -135,8 +135,9 @@ UpdateMixLossState UpdateAllMixLosses(
 
 DriverState::DriverState(absl::Span<const double> obj_values_in)
     : obj_values(obj_values_in),
-      best_bound(LowerBoundObjectiveValue(obj_values)),
-      sum_solutions(obj_values.size(), 0.0) {}
+      best_bound(LowerBoundObjectiveValue(obj_values)) {
+  sum_solutions = arena.Create<double>(obj_values.size(), 0.0);
+}
 
 void DriveOneIteration(absl::Span<CoverConstraint> constraints,
                        DriverState* state) {

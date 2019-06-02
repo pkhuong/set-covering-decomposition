@@ -12,7 +12,7 @@
 
 struct DriverState {
   explicit DriverState(absl::Span<const double> obj_values_in);
-  
+
   // Make sure arena is deallocated after all its potential children.
   BigVecArena arena;
 
@@ -28,7 +28,7 @@ struct DriverState {
 
   double sum_solution_value{0};
   double sum_solution_feasibility{0};
-  std::vector<double> sum_solutions;
+  BigVec<double> sum_solutions;
 
   double max_last_solution_infeasibility{
       std::numeric_limits<double>::infinity()};
