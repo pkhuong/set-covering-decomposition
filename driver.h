@@ -7,10 +7,14 @@
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
 
+#include "big-vec.h"
 #include "cover-constraint.h"
 
 struct DriverState {
   explicit DriverState(absl::Span<const double> obj_values_in);
+  
+  // Make sure arena is deallocated after all its potential children.
+  BigVecArena arena;
 
   absl::Span<const double> obj_values;
 

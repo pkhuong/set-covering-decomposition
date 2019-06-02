@@ -34,15 +34,16 @@ void dxpy(absl::Span<const double> src, absl::Span<double> acc) {
 }
 
 PrepareWeightsState PrepareAllWeights(absl::Span<CoverConstraint> constraints,
-                                      const DriverState& state) {
+                                      DriverState* state) {
   // Step size.
   double eta = std::numeric_limits<double>::infinity();
-  if (state.sum_mix_gap > 0) {
-    eta = std::log(std::max<size_t>(2, state.prev_num_non_zero)) /
-          state.sum_mix_gap;
+  if (state->sum_mix_gap > 0) {
+    eta = std::log(std::max<size_t>(2, state->prev_num_non_zero)) /
+          state->sum_mix_gap;
   }
 
-  PrepareWeightsState ret(state.obj_values.size(), state.prev_min_loss, eta);
+  PrepareWeightsState ret(state->arena.Create<double>(state->obj_values.size()),
+                          state->prev_min_loss, eta);
   for (auto& constraint : constraints) {
     constraint.PrepareWeights(&ret);
   }
@@ -139,7 +140,7 @@ DriverState::DriverState(absl::Span<const double> obj_values_in)
 void DriveOneIteration(absl::Span<CoverConstraint> constraints,
                        DriverState* state) {
   const PrepareWeightsState prepare_weights =
-      PrepareAllWeights(constraints, *state);
+      PrepareAllWeights(constraints, state);
   const double prev_mix_loss = ComputeMixLoss(prepare_weights.mix_loss);
 
   const double observed_loss =
