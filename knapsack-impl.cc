@@ -9,6 +9,8 @@
 #include "absl/algorithm/container.h"
 #include "prng.h"
 
+#define NOINLINE __attribute__((__noinline__))
+
 namespace internal {
 bool NormalizedEntry::operator==(const NormalizedEntry& other) const {
   return std::tie(weight, value, index) ==
@@ -53,7 +55,7 @@ PartitionResult PartitionEntriesDispatch(PartitionInstance instance,
                                          xs256* prng);
 
 // Trivial implementation: sort and scan.
-PartitionResult PartitionEntriesBaseCase(PartitionInstance instance) {
+NOINLINE PartitionResult PartitionEntriesBaseCase(PartitionInstance instance) {
   absl::c_sort(instance.entries,
                [](const NormalizedEntry& x, const NormalizedEntry& y) {
                  // Move higher profit ratio first.
@@ -106,16 +108,17 @@ double FindPivot(absl::Span<const NormalizedEntry> entries, xs256* prng) {
 //
 // This will do very badly with equally good entries (e.g., the
 // PartitionEntriesLarge.EqualRanges test).
-PartitionResult PartitionEntriesDivision(PartitionInstance instance,
-                                         xs256* prng) {
+NOINLINE PartitionResult PartitionEntriesDivision(PartitionInstance instance,
+                                                  xs256* prng) {
   const double pivot = FindPivot(instance.entries, prng);
 
   // We want elements better or equal to pivot to the left.
   // That is, if entry.value / entry.weight >= pivot
-  //       <==>  entry.value * pivot >= entry.weight.
+  //       <==>  entry.value >= pivot * entry.weight.
   const auto splitter = [pivot](const NormalizedEntry& entry) {
-    return entry.value * pivot >= entry.weight;
+    return entry.value >= pivot * entry.weight;
   };
+
   const size_t first_right =
       absl::c_partition(instance.entries, splitter) - instance.entries.begin();
   auto left_span = instance.entries.first(first_right);
@@ -148,8 +151,8 @@ size_t Log2Ceiling(size_t n) {
   return CHAR_BIT * sizeof(unsigned long long) - __builtin_clzll(n);
 }
 
-PartitionResult PartitionEntriesDispatch(PartitionInstance instance,
-                                         xs256* prng) {
+NOINLINE PartitionResult PartitionEntriesDispatch(PartitionInstance instance,
+                                                  xs256* prng) {
   if (instance.entries.empty() || instance.max_weight <= 0 ||
       instance.max_value <= 0) {
     return PartitionResult{instance.initial_offset, instance.max_weight,
