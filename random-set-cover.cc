@@ -22,9 +22,13 @@ constexpr bool kCheckFeasible = false;
 
 void OutputHistogram(
     const absl::Span<const std::pair<std::string, double>> rows,
-    const double step = 2.5e-2) {
+    bool cumulative, const double step = 2.5e-2) {
+  double cdf_accumulator = 0;
   for (const auto& row : rows) {
-    std::cout << absl::StrFormat("%20s: %6.3f%% ", row.first, 100 * row.second);
+    const double rhs = cumulative ? cdf_accumulator + row.second : row.second;
+    cdf_accumulator += row.second;
+
+    std::cout << absl::StrFormat("%20s: %7.3f%% ", row.first, 100 * rhs);
     if (row.second > 0.0) {
       if (row.second < step / 2) {
         std::cout << "'";
@@ -40,7 +44,8 @@ void OutputHistogram(
 }
 
 void OutputValuesStats(const absl::Span<const double> values,
-                       const double scale = 1.0, const double eps = kFeasEps) {
+                       const double scale = 1.0, const bool cumulative = false,
+                       const double eps = kFeasEps) {
   size_t num_zero = 0;
   size_t num_almost_zero = 0;
   size_t num_almost_one = 0;
@@ -78,7 +83,7 @@ void OutputValuesStats(const absl::Span<const double> values,
 
   rows.emplace_back("> 1 - eps", to_frac * num_almost_one);
   rows.emplace_back("1", to_frac * num_one);
-  OutputHistogram(rows);
+  OutputHistogram(rows, cumulative);
 }
 }  // namespace
 
@@ -198,7 +203,7 @@ int main(int, char**) {
     }
 
     std::cout << "Violation\n";
-    OutputValuesStats(infeas);
+    OutputValuesStats(infeas, 1.0, /*cumulative=*/true);
     std::cout << "\n";
   }
 
