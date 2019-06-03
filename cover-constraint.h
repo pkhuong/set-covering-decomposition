@@ -38,6 +38,9 @@ struct PrepareWeightsState {
     auto backing = std::make_shared<T>(std::move(data));
     knapsack_weights = absl::MakeSpan(*backing);
     backing_storage = std::move(backing);
+
+    // Avoid too many resizes at the beginning.
+    scratch.reserve(1024);
   }
 
   // Not copyable, movable.
@@ -73,7 +76,10 @@ struct ObserveLossState {
 
 struct UpdateMixLossState {
   explicit UpdateMixLossState(double min_loss, double eta)
-      : mix_loss(min_loss, eta) {}
+      : mix_loss(min_loss, eta) {
+    // Avoid too many resizes at the beginning.
+    scratch.reserve(1024);
+  }
 
   MixLossInfo mix_loss;
   std::vector<double> scratch;
