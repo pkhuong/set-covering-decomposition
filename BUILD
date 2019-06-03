@@ -13,7 +13,6 @@ cc_library(
   srcs = ["driver.cc"],
   deps = [
     "@com_google_absl//absl/time:time",
-    "@com_google_absl//absl/types:optional",
     "@com_google_absl//absl/types:span",
     ":big-vec",
     ":cover-constraint",
