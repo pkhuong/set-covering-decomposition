@@ -33,8 +33,10 @@ void OutputHistogram(absl::Span<const std::pair<std::string, double>> rows,
 }
 
 void OutputSolutionStats(absl::Span<const double> solution,
-                         double solution_scale) {
+                         double solution_scale, double eps = kFeasEps) {
   size_t num_zero = 0;
+  size_t num_almost_zero = 0;
+  size_t num_almost_one = 0;
   size_t num_one = 0;
 
   std::array<size_t, 25> buckets;
@@ -45,21 +47,20 @@ void OutputSolutionStats(absl::Span<const double> solution,
 
     if (value <= 0) {
       ++num_zero;
-      continue;
-    }
-
-    if (value >= 1.0) {
+    } else if (value < kFeasEps) {
+      ++num_almost_zero;
+    } else if (value >= 1.0) {
       ++num_one;
-      continue;
+    } else if (value > 1.0 - kFeasEps) {
+      ++num_almost_one;
+    } else {
+      ++buckets[static_cast<size_t>(buckets.size() * value)];
     }
-
-    ++buckets[static_cast<size_t>(buckets.size() * value)];
   }
 
   const double to_frac = 1.0 / solution.size();
   std::vector<std::pair<std::string, double>> rows = {
-      {"0", to_frac * num_zero},
-  };
+      {"0", to_frac * num_zero}, {"< eps", to_frac * num_almost_zero}};
 
   const double bucket_size = 1.0 / buckets.size();
   for (size_t i = 0; i < buckets.size(); ++i) {
@@ -68,6 +69,7 @@ void OutputSolutionStats(absl::Span<const double> solution,
         to_frac * buckets[i]);
   }
 
+  rows.emplace_back("> 1 - eps", to_frac * num_almost_one);
   rows.emplace_back("1", to_frac * num_one);
   OutputHistogram(rows);
 }
