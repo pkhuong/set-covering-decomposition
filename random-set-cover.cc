@@ -23,9 +23,15 @@ constexpr bool kCheckFeasible = false;
 void OutputHistogram(absl::Span<const std::pair<std::string, double>> rows,
                      const double step = 2.5e-2) {
   for (const auto& row : rows) {
-    std::cout << absl::StrFormat("%20s: %5.2f%% ", row.first, 100 * row.second);
-    for (double x = 0.0; x + step / 2 < row.second; x += step) {
-      std::cout << "*";
+    std::cout << absl::StrFormat("%20s: %6.3f%% ", row.first, 100 * row.second);
+    if (row.second > 0.0) {
+      if (row.second < step / 2) {
+        std::cout << "'";
+      } else {
+        for (double x = 0.0; x + step / 2 <= row.second; x += step) {
+          std::cout << "*";
+        }
+      }
     }
 
     std::cout << "\n";
