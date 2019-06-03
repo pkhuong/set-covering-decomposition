@@ -31,7 +31,7 @@ echo "Generating report"
 
 # When we upgrade to > 4.0, add  -ignore-filename-regex='(.*_test\.cc$)|(^external/)' 
 
-llvm-cov-4.0 show -format=html -output-dir=coverage/-instr-profile "$TEMP_DIR/merged.dat" $BIN_FILES $(echo "$LIBRARIES" |  xargs -n 1 -I xxx echo -n "-object xxx ") 
+llvm-cov-4.0 show -format=html -output-dir=coverage/ -instr-profile "$TEMP_DIR/merged.dat" $BIN_FILES $(echo "$LIBRARIES" |  xargs -n 1 -I xxx echo -n "-object xxx ") 
 
 rm "$TEMP_DIR/merged.dat"
 rm "$TEMP_DIR/tmp.dat"
