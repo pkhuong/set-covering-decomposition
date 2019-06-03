@@ -4,6 +4,7 @@
 #include <limits>
 #include <vector>
 
+#include "absl/time/time.h"
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
 
@@ -36,6 +37,12 @@ struct DriverState {
   BigVec<double> last_solution;
 
   bool feasible{true};
+
+  absl::Duration total_time;
+  absl::Duration prepare_time;
+  absl::Duration knapsack_time;
+  absl::Duration observe_time;
+  absl::Duration update_time;
 };
 
 void DriveOneIteration(absl::Span<CoverConstraint> constraints,

@@ -141,22 +141,40 @@ DriverState::DriverState(absl::Span<const double> obj_values_in)
 
 void DriveOneIteration(absl::Span<CoverConstraint> constraints,
                        DriverState* state) {
+  const absl::Time begin = absl::Now();
+  absl::Time last_time = begin;
+  const auto track = [&last_time](absl::Duration* acc) {
+    absl::Time end = absl::Now();
+    *acc += end - last_time;
+    last_time = end;
+  };
+
   const PrepareWeightsState prepare_weights =
       PrepareAllWeights(constraints, state);
+  track(&state->prepare_time);
+
   const double prev_mix_loss = ComputeMixLoss(prepare_weights.mix_loss);
 
   const double observed_loss =
       UpdateStateWithNewRelaxedSolution(prepare_weights, state);
+  track(&state->knapsack_time);
+
   // Nothing to do here: we have an infeasible problem!
   if (!state->feasible) {
+    state->total_time += absl::Now() - begin;
     return;
   }
 
   const ObserveLossState observe_state = ObserveAllLosses(constraints, state);
+  track(&state->observe_time);
+
   const UpdateMixLossState update_state =
       UpdateAllMixLosses(constraints, prepare_weights, observe_state, state);
+  track(&state->update_time);
 
   const double mix_loss = ComputeMixLoss(update_state.mix_loss);
   state->sum_mix_gap +=
       std::max(0.0, observed_loss - (mix_loss - prev_mix_loss));
+
+  state->total_time += absl::Now() - begin;
 }
