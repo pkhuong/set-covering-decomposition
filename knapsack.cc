@@ -61,8 +61,8 @@ KnapsackSolution SolveKnapsack(absl::Span<const double> obj_values,
   KnapsackSolution ret(arena->CreateUninit<double>(weights.size()));
   // We obtain a regular max / <= knapsack by flipping the objective function.
   // The weights are negative, so the goal is to exclude items.
-  NormalizedInstance knapsack =
-      NormalizeKnapsack(obj_values, weights, absl::MakeSpan(ret.solution));
+  NormalizedInstance knapsack = NormalizeKnapsack(
+      obj_values, weights, absl::MakeSpan(ret.solution), arena);
 
   assert(std::isfinite(knapsack.sum_candidate_weights));
 
