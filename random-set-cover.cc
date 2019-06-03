@@ -65,7 +65,8 @@ int main(int, char**) {
 
     if (i < 10 || ((i + 1) % 100) == 0 || done || infeasible ||
         relaxation_optimal) {
-      std::cout << "It " << i + 1 << ":"
+      const size_t num_it = i + 1;
+      std::cout << "It " << num_it << ":"
                 << " mix gap=" << state.sum_mix_gap << " max avg viol="
                 << -state.prev_min_loss / state.num_iterations
                 << " max avg feas="
@@ -76,6 +77,16 @@ int main(int, char**) {
                 << state.sum_solution_feasibility / state.num_iterations
                 << " max last vio=" << state.max_last_solution_infeasibility
                 << "\n";
+      std::cout
+          << "\t iter time=" << state.total_time / num_it << " prep time="
+          << 100 * absl::FDivDuration(state.prepare_time, state.total_time)
+          << "% ks time="
+          << 100 * absl::FDivDuration(state.knapsack_time, state.total_time)
+          << "% obs time="
+          << 100 * absl::FDivDuration(state.observe_time, state.total_time)
+          << "% upd time="
+          << 100 * absl::FDivDuration(state.update_time, state.total_time)
+          << "%.\n";
     }
 
     if (infeasible) {

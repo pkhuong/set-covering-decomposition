@@ -2,6 +2,7 @@ cc_binary(
   name = "random-set-cover",
   srcs = ["random-set-cover.cc"],
   deps = [
+    "@com_google_absl//absl/time:time",
     ":driver",
   ],
 )
