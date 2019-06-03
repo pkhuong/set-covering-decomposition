@@ -2,7 +2,9 @@ cc_binary(
   name = "random-set-cover",
   srcs = ["random-set-cover.cc"],
   deps = [
+    "@com_google_absl//absl/strings:str_format",
     "@com_google_absl//absl/time:time",
+    "@com_google_absl//absl/types:span",
     ":driver",
   ],
 )

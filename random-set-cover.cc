@@ -1,18 +1,77 @@
 #include "driver.h"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdlib>
 #include <iostream>
 #include <limits>
 #include <random>
+#include <string>
 
-static constexpr double kFeasEps = 5e-3;
-static constexpr size_t kNumTours = 1000 * 1000;
-static constexpr size_t kNumLocs = 10000;
-static constexpr size_t kMaxTourPerLoc = 2100;
-static constexpr size_t kMaxIter = 100000;
-static constexpr bool kCheckFeasible = false;
+#include "absl/strings/str_format.h"
+#include "absl/types/span.h"
+
+namespace {
+constexpr double kFeasEps = 5e-3;
+constexpr size_t kNumTours = 1000 * 1000;
+constexpr size_t kNumLocs = 10000;
+constexpr size_t kMaxTourPerLoc = 2100;
+constexpr size_t kMaxIter = 100000;
+constexpr bool kCheckFeasible = false;
+
+void OutputHistogram(absl::Span<const std::pair<std::string, double>> rows,
+                     const double step = 2.5e-2) {
+  for (const auto& row : rows) {
+    std::cout << absl::StrFormat("%20s: %5.2f%% ", row.first, 100 * row.second);
+    for (double x = 0.0; x + step / 2 < row.second; x += step) {
+      std::cout << "*";
+    }
+
+    std::cout << "\n";
+  }
+}
+
+void OutputSolutionStats(absl::Span<const double> solution,
+                         double solution_scale) {
+  size_t num_zero = 0;
+  size_t num_one = 0;
+
+  std::array<size_t, 25> buckets;
+  buckets.fill(0);
+
+  for (const double unscaled_value : solution) {
+    const double value = solution_scale * unscaled_value;
+
+    if (value <= 0) {
+      ++num_zero;
+      continue;
+    }
+
+    if (value >= 1.0) {
+      ++num_one;
+      continue;
+    }
+
+    ++buckets[static_cast<size_t>(buckets.size() * value)];
+  }
+
+  const double to_frac = 1.0 / solution.size();
+  std::vector<std::pair<std::string, double>> rows = {
+      {"0", to_frac * num_zero},
+  };
+
+  const double bucket_size = 1.0 / buckets.size();
+  for (size_t i = 0; i < buckets.size(); ++i) {
+    rows.emplace_back(
+        absl::StrFormat("%4.2f-%4.2f", bucket_size * i, bucket_size * (i + 1)),
+        to_frac * buckets[i]);
+  }
+
+  rows.emplace_back("1", to_frac * num_one);
+  OutputHistogram(rows);
+}
+}  // namespace
 
 int main(int, char**) {
   std::vector<double> cost;
@@ -127,5 +186,7 @@ int main(int, char**) {
 
   std::cout << "Final solution: Z=" << obj_value
             << " infeas=" << 1.0 - least_coverage << "\n";
+
+  OutputSolutionStats(solution, solution_scale);
   return 0;
 }
