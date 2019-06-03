@@ -66,8 +66,10 @@ class BigVec {
  private:
   friend class BigVecArena;
 
+  BigVec(T* data, size_t byte_size, size_t size, BigVecArena* parent)
+      : data_(data), byte_size_(byte_size), size_(size), parent_(parent) {}
   BigVec(T* data, size_t byte_size, size_t size, BigVecArena* parent,
-         const T& init = T())
+         const T& init)
       : data_(data), byte_size_(byte_size), size_(size), parent_(parent) {
     std::fill_n(data_, size_, init);
   }
@@ -103,6 +105,19 @@ class BigVecArena {
     return BigVec<T>(static_cast<T*>(data), byte_size, count, this, init);
   }
 
+  template <typename T>
+  BigVec<T> CreateUninit(size_t count) {
+    void* data;
+    size_t byte_size;
+    if (count == 0) {
+      data = EmptyAlloc<T>();
+      byte_size = 0;
+    } else {
+      std::tie(data, byte_size) = AcquireBytes(sizeof(T) * count);
+    }
+    return BigVec<T>(static_cast<T*>(data), byte_size, count, this);
+  }
+
   void Recycle(void* data, size_t byte_size);
 
  private:
@@ -123,7 +138,7 @@ class BigVecArena {
 // RAII class to override BigVecArena::global() within a dynamic
 // scope.
 class BigVecArenaContext {
-public:
+ public:
   explicit BigVecArenaContext();
   explicit BigVecArenaContext(BigVecArena* arena);
   ~BigVecArenaContext();
