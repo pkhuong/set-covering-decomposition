@@ -51,10 +51,6 @@ class xs256 {
  private:
   using State = std::array<uint64_t, 4>;
 
-  explicit xs256(State state) : state_(state) {}
-
-  State state() const { return state_; }
-
   static uint64_t rotl(const uint64_t x, int k) {
     return (x << k) | (x >> (64 - k));
   }
