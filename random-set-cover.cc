@@ -20,8 +20,9 @@ constexpr size_t kMaxTourPerLoc = 2100;
 constexpr size_t kMaxIter = 100000;
 constexpr bool kCheckFeasible = false;
 
-void OutputHistogram(absl::Span<const std::pair<std::string, double>> rows,
-                     const double step = 2.5e-2) {
+void OutputHistogram(
+    const absl::Span<const std::pair<std::string, double>> rows,
+    const double step = 2.5e-2) {
   for (const auto& row : rows) {
     std::cout << absl::StrFormat("%20s: %6.3f%% ", row.first, 100 * row.second);
     if (row.second > 0.0) {
@@ -38,8 +39,8 @@ void OutputHistogram(absl::Span<const std::pair<std::string, double>> rows,
   }
 }
 
-void OutputSolutionStats(absl::Span<const double> solution,
-                         double solution_scale, double eps = kFeasEps) {
+void OutputValuesStats(const absl::Span<const double> values,
+                       const double scale = 1.0, const double eps = kFeasEps) {
   size_t num_zero = 0;
   size_t num_almost_zero = 0;
   size_t num_almost_one = 0;
@@ -48,8 +49,8 @@ void OutputSolutionStats(absl::Span<const double> solution,
   std::array<size_t, 25> buckets;
   buckets.fill(0);
 
-  for (const double unscaled_value : solution) {
-    const double value = solution_scale * unscaled_value;
+  for (const double unscaled_value : values) {
+    const double value = scale * unscaled_value;
 
     if (value <= 0) {
       ++num_zero;
@@ -64,7 +65,7 @@ void OutputSolutionStats(absl::Span<const double> solution,
     }
   }
 
-  const double to_frac = 1.0 / solution.size();
+  const double to_frac = 1.0 / values.size();
   std::vector<std::pair<std::string, double>> rows = {
       {"0", to_frac * num_zero}, {"< eps", to_frac * num_almost_zero}};
 
@@ -183,18 +184,28 @@ int main(int, char**) {
   }
 
   double least_coverage = std::numeric_limits<double>::infinity();
-  for (const auto& tours : coefs) {
-    double coverage = 0.0;
-    for (uint32_t tour : tours) {
-      coverage += solution_scale * solution[tour];
+  {
+    std::vector<double> infeas;
+    infeas.reserve(coefs.size());
+    for (const auto& tours : coefs) {
+      double coverage = 0.0;
+      for (uint32_t tour : tours) {
+        coverage += solution_scale * solution[tour];
+      }
+
+      least_coverage = std::min(least_coverage, coverage);
+      infeas.push_back(1.0 - coverage);
     }
 
-    least_coverage = std::min(least_coverage, coverage);
+    std::cout << "Violation\n";
+    OutputValuesStats(infeas);
+    std::cout << "\n";
   }
 
   std::cout << "Final solution: Z=" << obj_value
             << " infeas=" << 1.0 - least_coverage << "\n";
 
-  OutputSolutionStats(solution, solution_scale);
+  std::cout << "Solution\n";
+  OutputValuesStats(solution, solution_scale);
   return 0;
 }
