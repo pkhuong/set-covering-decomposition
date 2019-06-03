@@ -19,12 +19,16 @@ bool NormalizedEntry::operator==(const NormalizedEntry& other) const {
 
 NormalizedInstance NormalizeKnapsack(absl::Span<const double> obj_values,
                                      absl::Span<const double> weights,
-                                     absl::Span<double> candidates) {
+                                     absl::Span<double> candidates,
+                                     BigVecArena* arena) {
   assert(obj_values.size() == weights.size());
   assert(obj_values.size() == candidates.size());
 
   NormalizedInstance ret;
-  ret.to_exclude.reserve(obj_values.size());
+  ret.backing_storage = arena->CreateUninit<NormalizedEntry>(obj_values.size());
+  ret.to_exclude = absl::MakeSpan(ret.backing_storage);
+
+  size_t num_to_exclude = 0;
   for (size_t i = 0, n = obj_values.size(); i < n; ++i) {
     const double weight = weights[i];
     const double value = -obj_values[i];  // flip for max
@@ -43,10 +47,11 @@ NormalizedInstance NormalizeKnapsack(absl::Span<const double> obj_values,
     // otherwise, add to normalized knapsack.
     if (value < 0) {
       assert(weight < 0);
-      ret.to_exclude.push_back({-weight, -value, i});
+      ret.to_exclude[num_to_exclude++] = NormalizedEntry{-weight, -value, i};
     }
   }
 
+  ret.to_exclude = ret.to_exclude.first(num_to_exclude);
   return ret;
 }
 

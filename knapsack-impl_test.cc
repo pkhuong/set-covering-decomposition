@@ -15,6 +15,8 @@ using ::testing::UnorderedElementsAre;
 using ::testing::UnorderedElementsAreArray;
 
 TEST(NormalizeInstance, Trivial) {
+  BigVecArenaContext ctx;
+
   // min / <=
   const std::vector<double> obj_values = {1, 2};
   const std::vector<double> weights = {-1, -2};
@@ -30,6 +32,8 @@ TEST(NormalizeInstance, Trivial) {
 }
 
 TEST(NormalizeInstance, AllCases) {
+  BigVecArenaContext ctx;
+
   // weights are non-positive. values are arbitrary.
   const std::vector<double> obj_values = {-1, 0, 1, -1, 0, 1};
   const std::vector<double> weights = {0, 0, 0, -1, -2, -3};

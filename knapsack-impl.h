@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "absl/types/span.h"
+#include "big-vec.h"
 
 namespace internal {
 struct NormalizedEntry {
@@ -18,9 +19,10 @@ struct NormalizedEntry {
 };
 
 struct NormalizedInstance {
-  std::vector<NormalizedEntry> to_exclude;
+  absl::Span<NormalizedEntry> to_exclude;
   double sum_candidate_values{0};
   double sum_candidate_weights{0};
+  BigVec<NormalizedEntry> backing_storage;
 };
 
 // Accepts the coefficients for a min / <= knapsack, where weights are
@@ -33,9 +35,10 @@ struct NormalizedInstance {
 // candidates must have the same size as `obj_values` and `weights`, and
 // will be initialised to 1 for entries that are initially assumed in the
 // knapsack, and 0 for entries that are rejected off hand.
-NormalizedInstance NormalizeKnapsack(absl::Span<const double> obj_values,
-                                     absl::Span<const double> weights,
-                                     absl::Span<double> candidates);
+NormalizedInstance NormalizeKnapsack(
+    absl::Span<const double> obj_values, absl::Span<const double> weights,
+    absl::Span<double> candidates,
+    BigVecArena* arena = &BigVecArena::default_instance());
 
 struct PartitionResult {
   size_t partition_index;
