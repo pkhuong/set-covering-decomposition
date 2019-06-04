@@ -1,6 +1,7 @@
 #ifndef BIG_VEC_H
 #define BIG_VEC_H
 #include <cstddef>
+#include <type_traits>
 #include <utility>
 
 #include "absl/base/thread_annotations.h"
@@ -11,6 +12,8 @@ class BigVecArena;
 
 template <typename T>
 class BigVec {
+  static_assert(std::is_trivial<T>::value,
+                "BigVec can only hold trivial types (e.g., POD).");
  public:
   using value_type = T;
   using iterator = T*;
@@ -71,6 +74,7 @@ class BigVec {
   BigVec(T* data, size_t byte_size, size_t size, BigVecArena* parent,
          const T& init)
       : data_(data), byte_size_(byte_size), size_(size), parent_(parent) {
+    // XXX: we must use placement new to avoid UB.
     std::fill_n(data_, size_, init);
   }
 
