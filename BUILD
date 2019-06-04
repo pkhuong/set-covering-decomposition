@@ -132,3 +132,14 @@ cc_library(
   ],
 )
 
+cc_binary(
+  name = "visualizer",
+  srcs = ["visualizer.cc"],
+  deps = [
+    "@com_google_absl//absl/flags:flag",
+    "@gl3w//:gl3w",
+    "@imgui//:imgui",
+    "@imgui//:imgui-impl",
+  ],
+  linkopts = ["-lGL", "-lglfw", "-lrt", "-lm", "-ldl"],
+)
