@@ -114,11 +114,11 @@ std::pair<void *, size_t> BigVecArena::AcquireBytes(size_t min_size) {
     if (min_size >= kOneGb) {
       sizes.push_back(round(kOneGb));
     }
-    
+
     if (min_size >= kTwoMb) {
       sizes.push_back(round(kTwoMb));
     }
-    
+
     sizes.push_back(round(4096));
     for (size_t exact_size : sizes) {
       auto &list = cache_[exact_size];

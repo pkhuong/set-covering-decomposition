@@ -14,6 +14,7 @@ template <typename T>
 class BigVec {
   static_assert(std::is_trivial<T>::value,
                 "BigVec can only hold trivial types (e.g., POD).");
+
  public:
   using value_type = T;
   using iterator = T*;
