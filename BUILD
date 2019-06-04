@@ -130,3 +130,30 @@ cc_library(
     "@com_google_absl//absl/synchronization",
   ],
 )
+
+cc_library(
+  name = "imgui",
+  hdrs = ["imgui/imgui.h"],
+  srcs = ["imgui/imgui.cpp", "imgui/imconfig.h", "imgui/imgui_demo.cpp", "imgui/imgui_draw.cpp",
+          "imgui/imgui_internal.h", "imgui/imgui_widgets.cpp", "imgui/imstb_rectpack.h",
+          "imgui/imstb_textedit.h", "imgui/imstb_truetype.h"],
+  copts = ["-DIMGUI_DISABLE_OBSOLETE_FUNCTIONS"],
+)
+
+cc_library(
+  name = "imgui-impl",
+  hdrs = ["imgui/examples/imgui_impl_glfw.h", "imgui/examples/imgui_impl_opengl3.h",],
+  srcs = ["imgui/examples/imgui_impl_glfw.cpp", "imgui/examples/imgui_impl_opengl3.cpp"],
+  copts = ["'-DIMGUI_IMPL_OPENGL_LOADER_CUSTOM=\"external/gl3w/GL/gl3w.h\"'",
+           "-DIMGUI_DISABLE_OBSOLETE_FUNCTIONS", "-Iimgui"],
+  deps = [":imgui", "@gl3w//:gl3w"],
+)
+
+cc_binary(
+  name = "imgui-demo",
+  srcs = ["imgui/examples/example_glfw_opengl3/main.cpp"],
+  deps = [":imgui", ":imgui-impl", "@gl3w//:gl3w"],
+  copts = ["'-DIMGUI_IMPL_OPENGL_LOADER_CUSTOM=\"GL/gl3w.h\"'",
+           "-DIMGUI_DISABLE_OBSOLETE_FUNCTIONS","-Iimgui", "-Iimgui/examples"],
+  linkopts = ["-lGL", "-lglfw", "-lrt", "-lm", "-ldl"],
+)
