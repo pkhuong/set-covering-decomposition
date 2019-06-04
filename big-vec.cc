@@ -5,14 +5,6 @@
 #include <cstdio>
 #include <iostream>
 
-#ifndef MAP_HUGE_2MB
-#define MAP_HUGE_2MB (21 << MAP_HUGE_SHIFT)
-#endif
-
-#ifndef MAP_HUGE_1GB
-#define MAP_HUGE_1GB (30 << MAP_HUGE_SHIFT)
-#endif
-
 namespace {
 constexpr size_t kOneGb = 1024 * 1024 * 1024;
 constexpr size_t kTwoMb = 2 * 1024 * 1024;
@@ -79,6 +71,29 @@ void *BigVecArena::AcquireRoundedBytes(size_t exact_size, int flags) {
   return r;
 }
 
+#if defined(MAP_HUGE_SHIFT) && defined(MAP_HUGETLB)
+#ifndef MAP_HUGE_2MB
+#define MAP_HUGE_2MB (21 << MAP_HUGE_SHIFT)
+#endif
+
+#ifndef MAP_HUGE_1GB
+#define MAP_HUGE_1GB (30 << MAP_HUGE_SHIFT)
+#endif
+
+#else
+#ifndef MAP_HUGE_2MB
+#define MAP_HUGE_2MB 0
+#endif
+
+#ifndef MAP_HUGE_1GB
+#define MAP_HUGE_1GB 0
+#endif
+
+#ifndef MAP_HUGETLB
+#define MAP_HUGETLB 0
+#endif
+#endif
+
 std::pair<void *, size_t> BigVecArena::AcquireBytes(size_t min_size) {
   const auto round = [min_size](size_t page) {
     return page * ((min_size + page - 1) / page);
@@ -104,7 +119,7 @@ std::pair<void *, size_t> BigVecArena::AcquireBytes(size_t min_size) {
   }
 
   std::clog << "Looking for a vector of " << min_size << " bytes\n";
-  if (min_size >= kOneGb) {
+  if (MAP_HUGE_1GB != 0 && min_size >= kOneGb) {
     size_t exact_size = round(kOneGb);
     void *ret = AcquireRoundedBytes(exact_size, MAP_HUGETLB | MAP_HUGE_1GB);
     if (ret != nullptr) {
@@ -113,7 +128,7 @@ std::pair<void *, size_t> BigVecArena::AcquireBytes(size_t min_size) {
     }
   }
 
-  if (min_size >= kTwoMb) {
+  if (MAP_HUGE_2MB != 0 && min_size >= kTwoMb) {
     size_t exact_size = round(kTwoMb);
     void *ret = AcquireRoundedBytes(exact_size, MAP_HUGETLB | MAP_HUGE_2MB);
     if (ret != nullptr) {
@@ -123,7 +138,10 @@ std::pair<void *, size_t> BigVecArena::AcquireBytes(size_t min_size) {
   }
 
   size_t exact_size = round(4096);
-  void *ret = AcquireRoundedBytes(exact_size, MAP_HUGETLB);
+  void *ret = nullptr;
+  if (MAP_HUGETLB != 0) {
+    ret = AcquireRoundedBytes(exact_size, MAP_HUGETLB);
+  }
   if (ret == nullptr) {
     ret = AcquireRoundedBytes(exact_size, 0);
   }
