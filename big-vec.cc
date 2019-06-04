@@ -5,6 +5,8 @@
 #include <cstdio>
 #include <iostream>
 
+#include "absl/container/inlined_vector.h"
+
 namespace {
 constexpr size_t kOneGb = 1024 * 1024 * 1024;
 constexpr size_t kTwoMb = 2 * 1024 * 1024;
@@ -108,7 +110,17 @@ std::pair<void *, size_t> BigVecArena::AcquireBytes(size_t min_size) {
   {
     absl::MutexLock ml(&mu_);
 
-    for (size_t exact_size : {round(kOneGb), round(kTwoMb), round(4096)}) {
+    absl::InlinedVector<size_t, 3> sizes;
+    if (min_size >= kOneGb) {
+      sizes.push_back(round(kOneGb));
+    }
+    
+    if (min_size >= kTwoMb) {
+      sizes.push_back(round(kTwoMb));
+    }
+    
+    sizes.push_back(round(4096));
+    for (size_t exact_size : sizes) {
       auto &list = cache_[exact_size];
       if (!list.empty()) {
         void *ret = list.back();
