@@ -8,6 +8,16 @@ cc_binary(
     "@com_google_absl//absl/time:time",
     "@com_google_absl//absl/types:span",
     ":driver",
+    ":random-set-cover-instance",
+  ],
+)
+
+cc_library(
+  name = "random-set-cover-instance",
+  hdrs = ["random-set-cover-instance.h"],
+  srcs = ["random-set-cover-instance.cc"],
+  deps = [
+    ":cover-constraint",
   ],
 )
 

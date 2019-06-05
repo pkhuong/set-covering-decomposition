@@ -11,6 +11,7 @@
 
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
+#include "random-set-cover-instance.h"
 
 namespace {
 constexpr double kFeasEps = 5e-3;
@@ -88,47 +89,14 @@ void OutputValuesStats(const absl::Span<const double> values,
 }  // namespace
 
 int main(int, char**) {
-  std::vector<double> cost;
-  std::vector<std::vector<uint32_t>> coefs;
+  RandomSetCoverInstance instance =
+      GenerateRandomInstance(kNumTours, kNumLocs, kMaxTourPerLoc);
 
-  {
-    std::random_device dev;
-    std::mt19937 rng(dev());
-
-    std::uniform_int_distribution<size_t> num_tour_distribution(1,
-                                                                kMaxTourPerLoc);
-    std::uniform_real_distribution<> cost_distribution(0.0, 10.0);
-    std::vector<uint32_t> tour_ids;
-    for (size_t i = 0; i < kNumTours; ++i) {
-      tour_ids.push_back(i);
-      cost.push_back(cost_distribution(rng));
-    }
-
-    for (size_t i = 0; i < kNumLocs; ++i) {
-      coefs.emplace_back();
-      std::vector<uint32_t>& dst = coefs.back();
-
-      // Perform a partial Fisher-Yates shuffle and consume
-      // newly-generated elements as they come.
-      std::uniform_real_distribution<> u01(0.0, 1.0);
-      for (size_t j = 0, n = num_tour_distribution(rng); j < n; ++j) {
-        size_t src = j + (tour_ids.size() - j) * u01(rng);
-        std::swap(tour_ids[j], tour_ids[src]);
-        dst.push_back(tour_ids[j]);
-      }
-    }
-  }
-
-  std::vector<CoverConstraint> constraints;
-  for (const auto& tours : coefs) {
-    constraints.emplace_back(tours);
-  }
-
-  DriverState state(cost);
+  DriverState state(instance.obj_values);
   absl::Span<const double> solution;
   double solution_scale = 1.0;
   for (size_t i = 0; i < kMaxIter; ++i) {
-    DriveOneIteration(absl::MakeSpan(constraints), &state);
+    DriveOneIteration(absl::MakeSpan(instance.constraints), &state);
 
     const bool done = (-state.prev_min_loss / state.num_iterations) < kFeasEps;
     const bool infeasible = !state.feasible;
@@ -185,14 +153,14 @@ int main(int, char**) {
 
   double obj_value = 0.0;
   for (size_t i = 0; i < solution.size(); ++i) {
-    obj_value += solution_scale * solution[i] * cost[i];
+    obj_value += solution_scale * solution[i] * instance.obj_values[i];
   }
 
   double least_coverage = std::numeric_limits<double>::infinity();
   {
     std::vector<double> infeas;
-    infeas.reserve(coefs.size());
-    for (const auto& tours : coefs) {
+    infeas.reserve(instance.sets_per_value.size());
+    for (const std::vector<uint32_t>& tours : instance.sets_per_value) {
       double coverage = 0.0;
       for (uint32_t tour : tours) {
         coverage += solution_scale * solution[tour];
