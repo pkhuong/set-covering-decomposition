@@ -11,9 +11,9 @@
 using ::internal::NormalizedEntry;
 using ::internal::NormalizedInstance;
 using ::internal::NormalizeKnapsack;
+using ::internal::PartitionEntries;
 using ::internal::PartitionInstance;
 using ::internal::PartitionResult;
-using ::internal::PartitionEntries;
 
 KnapsackSolution::KnapsackSolution(BigVec<double> solution_,
                                    double objective_value_, double feasibility_,
