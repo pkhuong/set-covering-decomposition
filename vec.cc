@@ -57,7 +57,7 @@ v4df ChunkApplyHedgeLoss(absl::Span<const double> losses, double min_loss,
   return acc;
 }
 
-}  // namesoace
+}  // namespace
 
 double ApplyHedgeLoss(absl::Span<const double> losses, double min_loss,
                       double step_size, absl::Span<double> weights) {
