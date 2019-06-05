@@ -34,7 +34,7 @@ std::pair<double, std::vector<double>> ComputeCoverInfeasibility(
     infeas.push_back(1.0 - coverage);
   }
 
-  return std::make_pair(least_coverage, std::move(infeas));
+  return std::make_pair(1.0 - least_coverage, std::move(infeas));
 }
 
 std::vector<std::pair<std::string, double>> BinValues(

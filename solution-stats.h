@@ -12,10 +12,10 @@
 double ComputeObjectiveValue(absl::Span<const double> solution,
                              absl::Span<const double> costs);
 
-// Computes the coverage fraction for a set of coverage constraints,
-// given the current solution.
+// Computes the infeasibility (non-coverage, violation) fraction for a
+// set of coverage constraints, given the current solution.
 //
-// Returns the least coverage and the vector of all coverage.
+// Returns the max violation and the vector of all violations.
 std::pair<double, std::vector<double>> ComputeCoverInfeasibility(
     absl::Span<const double> solution,
     absl::Span<const std::vector<uint32_t>> constraints);

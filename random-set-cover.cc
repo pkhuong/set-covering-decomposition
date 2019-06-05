@@ -32,7 +32,7 @@ int main(int, char**) {
 
   const double obj_value = ComputeObjectiveValue(solution, instance.obj_values);
 
-  double least_coverage;
+  double max_infeas;
   {
     std::vector<double> infeas;
     std::tie(least_coverage, infeas) =
@@ -49,7 +49,7 @@ int main(int, char**) {
     std::cout << "\n";
   }
 
-  std::cout << "Final solution: Z=" << obj_value
-            << " infeas=" << 1.0 - least_coverage << "\n";
+  std::cout << "Final solution: Z=" << obj_value << " infeas=" << max_infeas
+            << "\n";
   return 0;
 }
