@@ -1,0 +1,73 @@
+# We need just a bit of weirdness to fix up include paths.
+
+cc_library(
+  name = "imgui",
+  visibility = ["//visibility:public"],
+  hdrs = ["imgui.h"],
+  srcs = [
+    "imgui.cpp",
+    "imconfig.h",
+    "imgui_demo.cpp",
+    "imgui_draw.cpp",
+    "imgui_internal.h",
+    "imgui_widgets.cpp",
+    "imstb_rectpack.h",
+    "imstb_textedit.h",
+    "imstb_truetype.h",
+  ],
+  copts = ["-DIMGUI_DISABLE_OBSOLETE_FUNCTIONS"],
+)
+
+cc_library(
+  name = "imgui-impl",
+  visibility = ["//visibility:public"],
+  hdrs = ["imgui_impl_glfw.h", "imgui_impl_opengl3.h"],
+  srcs = ["examples/imgui_impl_glfw.cpp", "examples/imgui_impl_opengl3.cpp"],
+  copts = ["'-DIMGUI_IMPL_OPENGL_LOADER_CUSTOM=\"../gl3w/GL/gl3w.h\"'",
+           "-DIMGUI_DISABLE_OBSOLETE_FUNCTIONS"],
+  deps = [":imgui", "@gl3w//:gl3w"],
+)
+
+# Copy imgui_impl_foo headers from examples/ to the root.
+genrule(
+  name = "relocate-impl",
+  visibility = ["//visibility:private"],
+  srcs = ["examples/imgui_impl_glfw.h", "examples/imgui_impl_opengl3.h"],
+  outs = ["imgui_impl_glfw.h", "imgui_impl_opengl3.h"],
+  cmd = """
+cp $(location examples/imgui_impl_glfw.h) $(location imgui_impl_glfw.h);
+cp $(location examples/imgui_impl_opengl3.h) $(location imgui_impl_opengl3.h);
+""",
+  local=True,
+  message="Generating fixed up demo file",
+  output_to_bindir=False,
+)
+
+# Make the demo build with bazel paths.
+genrule(
+  name = "fixedup-demo",
+  visibility = ["//visibility:private"],
+  srcs = ["examples/example_glfw_opengl3/main.cpp"],
+  outs = ["demo.cpp"],
+  cmd = """
+egrep -q 'bool err = false; +//.*IMGUI_IMPL_OPENGL_LOADER_CUSTOM' $(location examples/example_glfw_opengl3/main.cpp) || echo "Unable to find line to fix up";
+sed -re 's|bool err = false; +//.*IMGUI_IMPL_OPENGL_LOADER_CUSTOM.*$$|bool err = gl3wInit() != 0;|' < $(location examples/example_glfw_opengl3/main.cpp) > $(location demo.cpp);
+""",
+  local=True,
+  message="Generating fixed up demo file",
+  output_to_bindir=False,
+)
+
+cc_binary(
+  name = "demo",
+  visibility = ["//visibility:public"],
+  srcs = ["demo.cpp"],
+  deps = [
+    "imgui",
+    "imgui-impl",
+    "@gl3w//:gl3w",
+  ],
+  copts = ["'-DIMGUI_IMPL_OPENGL_LOADER_CUSTOM=\"../gl3w/GL/gl3w.h\"'",
+           "-DIMGUI_DISABLE_OBSOLETE_FUNCTIONS"],
+  linkopts = ["-lGL", "-lglfw", "-lrt", "-lm", "-ldl"],
+)

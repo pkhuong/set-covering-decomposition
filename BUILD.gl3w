@@ -1,0 +1,38 @@
+# gl3w: generate the files, patch up <> -> "", then build libgl3w.
+
+cc_library(
+  name = "gl3w",
+  visibility = ["//visibility:public"],
+  hdrs = [
+    "GL/gl3w.h",
+    "GL/glcorearb.h",
+    "KHR/khrplatform.h",
+  ],
+  srcs = ["src/gl3w.c"],
+)
+
+genrule(
+  name = "gl3w_gen",
+  visibility = ["//visibility:private"],
+  srcs = [],
+  outs = [
+    "include/GL/gl3w.h",
+    "include/GL/glcorearb.h",
+    "include/KHR/khrplatform.h",
+    "GL/gl3w.h",
+    "GL/glcorearb.h",
+    "KHR/khrplatform.h",
+    "src/gl3w.c",
+  ],
+  cmd = """
+external/gl3w/gl3w_gen.py --root $(RULEDIR);
+sed -e 's|<GL/glcorearb.h>|"GL/glcorearb.h"|' -i $(location include/GL/gl3w.h);
+sed -e 's|<GL/gl3w.h>|"GL/gl3w.h"|' -i $(location src/gl3w.c);
+cp -r $(RULEDIR)/include/GL $(RULEDIR);
+cp -r $(RULEDIR)/include/KHR $(RULEDIR);
+""",
+  local=True,
+  message="Generating gl3w headers",
+  output_to_bindir=False,
+)
+
