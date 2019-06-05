@@ -24,7 +24,7 @@ namespace {
 constexpr double kFeasEps = 5e-3;
 constexpr size_t kNumTours = 1000 * 1000;
 constexpr size_t kNumLocs = 10000;
-constexpr size_t kMaxTourPerLoc = 2100;
+constexpr size_t kMaxTourPerLoc = 3;
 constexpr size_t kMaxIter = 100000;
 constexpr bool kCheckFeasible = false;
 
@@ -125,7 +125,7 @@ int main(int argc, char** argv) {
     bool infeasible = false;
     bool relaxation_optimal = false;
     double obj_value = 0;
-    double least_coverage = 0;
+    double max_violation = 0;
     std::vector<double> infeas;
     std::vector<float> infeas_bins;
     std::vector<float> solution_bins;
@@ -159,7 +159,7 @@ int main(int argc, char** argv) {
     if (any_change && last_state.num_iterations > 0) {
       last_state.obj_value =
           ComputeObjectiveValue(last_state.solution, instance.obj_values);
-      std::tie(last_state.least_coverage, last_state.infeas) =
+      std::tie(last_state.max_violation, last_state.infeas) =
           ComputeCoverInfeasibility(last_state.solution,
                                     instance.sets_per_value);
       {
@@ -200,7 +200,7 @@ int main(int argc, char** argv) {
       OutputHistogram(std::cout, BinValues(last_state.solution, 25, kFeasEps));
 
       std::cout << "\nFinal solution: Z=" << last_state.obj_value
-                << " infeas=" << 1.0 - last_state.least_coverage << "\n";
+                << " infeas=" << last_state.max_violation << "\n";
     }
 
     ImGui_ImplOpenGL3_NewFrame();
@@ -213,8 +213,7 @@ int main(int argc, char** argv) {
       ImGui::Text("Iteration #%zu", last_state.num_iterations);
       if (last_state.num_iterations > 0) {
         ImGui::Text("Current avg obj value: %f", last_state.obj_value);
-        ImGui::Text("Worst-case constraint infeas: %f",
-                    1.0 - last_state.least_coverage);
+        ImGui::Text("Worst-case constraint infeas: %f", last_state.max_violation);
       }
 
       ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
@@ -245,26 +244,19 @@ int main(int argc, char** argv) {
         ImGui::Begin("Decision variable values");
         ImGui::Text("Decisions (0: %.2f%%)",
                     100 * last_state.solution_bins.front());
-        ImGui::PlotLines("", last_state.solution_bins.data(),
-                         last_state.solution_bins.size(),
-                         /*values_offset=*/0, /*overlay_text=*/nullptr,
-                         /*scale_min=*/0.0, /*scale_max=*/1.0,
-                         /*graph_size=*/ImVec2(400, 200));
-
         ImGui::PlotLines("", last_state.non_zero_solution_bins.data(),
                          last_state.non_zero_solution_bins.size(),
                          /*values_offset=*/0, /*overlay_text=*/nullptr,
                          /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
-                         /*graph_size=*/ImVec2(400, 200));
+                         /*graph_size=*/ImVec2(400, 300));
         ImGui::End();
       }
 
       {
-        ImGui::Begin("Coverage");
+        ImGui::Begin("Constraints");
         ImGui::Text(
-            "Coverage (>= 1e-eps: %.2f%%)",
-            100 * (last_state.infeas_bins.back() +
-                   last_state.infeas_bins[last_state.infeas_bins.size() - 2]));
+            "Violation (<= eps: %.2f%%)",
+            100 * (last_state.infeas_bins.front() + last_state.infeas_bins[1]));
         ImGui::PlotLines("", last_state.infeas_bins.data(),
                          last_state.infeas_bins.size(),
                          /*values_offset=*/0, /*overlay_text=*/nullptr,
