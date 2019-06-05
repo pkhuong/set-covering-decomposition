@@ -1,16 +1,9 @@
 #include "driver.h"
 
-#include <algorithm>
-#include <array>
 #include <cstddef>
-#include <cstdlib>
 #include <iostream>
-#include <limits>
-#include <random>
-#include <string>
 #include <tuple>
 
-#include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "random-set-cover-instance.h"
 #include "set-cover-solver.h"
