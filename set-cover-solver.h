@@ -19,7 +19,7 @@ class SetCoverSolver {
     bool infeasible GUARDED_BY(mu);
     bool relaxation_optimal GUARDED_BY(mu);
 
-    std::vector<double> current_solution GUARDED_BY(MU);
+    std::vector<double> current_solution GUARDED_BY(mu);
   };
 
   // Both spans must outlive this instance.
