@@ -9,6 +9,7 @@ cc_binary(
     "@com_google_absl//absl/types:span",
     ":driver",
     ":random-set-cover-instance",
+    ":set-cover-solver"
   ],
 )
 
@@ -18,6 +19,20 @@ cc_library(
   srcs = ["random-set-cover-instance.cc"],
   deps = [
     ":cover-constraint",
+  ],
+)
+
+cc_library(
+  name = "set-cover-solver",
+  hdrs = ["set-cover-solver.h"],
+  srcs = ["set-cover-solver.cc"],
+  deps = [
+    ":cover-constraint",
+    ":driver",
+    "@com_google_absl//absl/base:core_headers",
+    "@com_google_absl//absl/synchronization",
+    "@com_google_absl//absl/time:time",
+    "@com_google_absl//absl/types:span",
   ],
 )
 

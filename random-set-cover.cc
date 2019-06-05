@@ -12,6 +12,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
 #include "random-set-cover-instance.h"
+#include "set-cover-solver.h"
 
 namespace {
 constexpr double kFeasEps = 5e-3;
@@ -92,68 +93,17 @@ int main(int, char**) {
   RandomSetCoverInstance instance =
       GenerateRandomInstance(kNumTours, kNumLocs, kMaxTourPerLoc);
 
-  DriverState state(instance.obj_values);
-  absl::Span<const double> solution;
-  double solution_scale = 1.0;
-  for (size_t i = 0; i < kMaxIter; ++i) {
-    DriveOneIteration(absl::MakeSpan(instance.constraints), &state);
+  SetCoverSolver solver(instance.obj_values,
+                        absl::MakeSpan(instance.constraints));
 
-    const bool done = (-state.prev_min_loss / state.num_iterations) < kFeasEps;
-    const bool infeasible = !state.feasible;
-    const bool relaxation_optimal =
-        kCheckFeasible && state.max_last_solution_infeasibility < kFeasEps &&
-        state.last_solution_value <= state.best_bound + kFeasEps;
+  solver.Drive(kMaxIter, kFeasEps, kCheckFeasible);
 
-    if (i < 10 || ((i + 1) % 100) == 0 || done || infeasible ||
-        relaxation_optimal) {
-      const size_t num_it = i + 1;
-      std::cout << "It " << num_it << ":"
-                << " mix gap=" << state.sum_mix_gap << " max avg viol="
-                << -state.prev_min_loss / state.num_iterations
-                << " max avg feas="
-                << state.prev_max_loss / state.num_iterations
-                << " best bound=" << state.best_bound << " avg sol value="
-                << state.sum_solution_value / state.num_iterations
-                << " avg sol feasibility="
-                << state.sum_solution_feasibility / state.num_iterations
-                << " max last vio=" << state.max_last_solution_infeasibility
-                << "\n";
-      std::cout
-          << "\t iter time=" << state.total_time / num_it << " prep time="
-          << 100 * absl::FDivDuration(state.prepare_time, state.total_time)
-          << "% ks time="
-          << 100 * absl::FDivDuration(state.knapsack_time, state.total_time)
-          << "% obs time="
-          << 100 * absl::FDivDuration(state.observe_time, state.total_time)
-          << "% upd time="
-          << 100 * absl::FDivDuration(state.update_time, state.total_time)
-          << "%.\n";
-    }
-
-    if (infeasible) {
-      std::cout << "Infeasible!?!\n";
-      return 0;
-    }
-
-    if (relaxation_optimal) {
-      std::cout << "Feasible!\n";
-      solution = absl::MakeSpan(state.last_solution);
-      break;
-    }
-
-    if (done) {
-      break;
-    }
-  }
-
-  if (solution.empty()) {
-    solution = absl::MakeSpan(state.sum_solutions);
-    solution_scale = 1.0 / state.num_iterations;
-  }
+  absl::MutexLock ml(&solver.state().mu);
+  absl::Span<const double> solution(solver.state().current_solution);
 
   double obj_value = 0.0;
   for (size_t i = 0; i < solution.size(); ++i) {
-    obj_value += solution_scale * solution[i] * instance.obj_values[i];
+    obj_value += solution[i] * instance.obj_values[i];
   }
 
   double least_coverage = std::numeric_limits<double>::infinity();
@@ -163,7 +113,7 @@ int main(int, char**) {
     for (const std::vector<uint32_t>& tours : instance.sets_per_value) {
       double coverage = 0.0;
       for (uint32_t tour : tours) {
-        coverage += solution_scale * solution[tour];
+        coverage += solution[tour];
       }
 
       least_coverage = std::min(least_coverage, coverage);
@@ -179,6 +129,6 @@ int main(int, char**) {
             << " infeas=" << 1.0 - least_coverage << "\n";
 
   std::cout << "Solution\n";
-  OutputValuesStats(solution, solution_scale);
+  OutputValuesStats(solution);
   return 0;
 }
