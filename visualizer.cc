@@ -117,6 +117,8 @@ int main(int argc, char** argv) {
   std::thread solver_thread(
       [&solver] { solver.Drive(kMaxIter, kFeasEps, kCheckFeasible); });
 
+  bool text_summary_printed = false;
+
   struct {
     std::vector<double> solution;
     size_t num_iterations = size_t{-1UL};
@@ -127,6 +129,7 @@ int main(int argc, char** argv) {
     std::vector<double> infeas;
     std::vector<float> infeas_bins;
     std::vector<float> solution_bins;
+    std::vector<float> non_zero_solution_bins;
   } last_state;
 
   // Main loop
@@ -160,7 +163,7 @@ int main(int argc, char** argv) {
           ComputeCoverInfeasibility(last_state.solution,
                                     instance.sets_per_value);
       {
-        const auto infeas_bins = BinValues(last_state.infeas, 50, kFeasEps);
+        const auto infeas_bins = BinValues(last_state.infeas, 100, kFeasEps);
         last_state.infeas_bins.clear();
         for (const auto& entry : infeas_bins) {
           last_state.infeas_bins.push_back(entry.second);
@@ -168,12 +171,36 @@ int main(int argc, char** argv) {
       }
 
       {
-        const auto sol_bins = BinValues(last_state.solution, 50, kFeasEps);
+        const auto sol_bins = BinValues(last_state.solution, 100, kFeasEps);
         last_state.solution_bins.clear();
+        last_state.non_zero_solution_bins.clear();
+        double scale;
+        bool first = true;
         for (const auto& entry : sol_bins) {
           last_state.solution_bins.push_back(entry.second);
+          if (first) {
+            scale = 1 / (1.0 - entry.second);
+          } else {
+            last_state.non_zero_solution_bins.push_back(entry.second * scale);
+          }
+
+          first = false;
         }
       }
+    }
+
+    if (any_change && done && !text_summary_printed) {
+      text_summary_printed = true;
+
+      std::cout << "Violation\n";
+      OutputHistogram(std::cout, BinValues(last_state.infeas, 25, kFeasEps),
+                      /*step=*/2.5e-2, /*cumulative=*/true);
+
+      std::cout << "\nSolution\n";
+      OutputHistogram(std::cout, BinValues(last_state.solution, 25, kFeasEps));
+
+      std::cout << "\nFinal solution: Z=" << last_state.obj_value
+                << " infeas=" << 1.0 - last_state.least_coverage << "\n";
     }
 
     ImGui_ImplOpenGL3_NewFrame();
@@ -216,23 +243,32 @@ int main(int argc, char** argv) {
     if (last_state.num_iterations > 0) {
       {
         ImGui::Begin("Decision variable values");
-        ImGui::Text("Decisions");
+        ImGui::Text("Decisions (0: %.2f%%)",
+                    100 * last_state.solution_bins.front());
         ImGui::PlotLines("", last_state.solution_bins.data(),
                          last_state.solution_bins.size(),
                          /*values_offset=*/0, /*overlay_text=*/nullptr,
                          /*scale_min=*/0.0, /*scale_max=*/1.0,
-                         /*graph_size=*/ImVec2(400, 300));
+                         /*graph_size=*/ImVec2(400, 200));
 
+        ImGui::PlotLines("", last_state.non_zero_solution_bins.data(),
+                         last_state.non_zero_solution_bins.size(),
+                         /*values_offset=*/0, /*overlay_text=*/nullptr,
+                         /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
+                         /*graph_size=*/ImVec2(400, 200));
         ImGui::End();
       }
 
       {
         ImGui::Begin("Coverage");
-        ImGui::Text("Coverage");
+        ImGui::Text(
+            "Coverage (>= 1e-eps: %.2f%%)",
+            100 * (last_state.infeas_bins.back() +
+                   last_state.infeas_bins[last_state.infeas_bins.size() - 2]));
         ImGui::PlotLines("", last_state.infeas_bins.data(),
                          last_state.infeas_bins.size(),
                          /*values_offset=*/0, /*overlay_text=*/nullptr,
-                         /*scale_min=*/0.0, /*scale_max=*/1.0,
+                         /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
                          /*graph_size=*/ImVec2(400, 300));
 
         ImGui::End();
