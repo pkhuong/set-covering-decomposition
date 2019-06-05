@@ -12,6 +12,34 @@ cc_binary(
   ],
 )
 
+
+cc_binary(
+  name = "visualizer",
+  srcs = select({
+    ":gui": ["visualizer.cc"],
+    "//conditions:default": ["dummy-visualizer.c"],
+  }),
+  deps = select({
+    ":gui": [
+      ":driver",
+      ":random-set-cover-instance",
+      ":set-cover-solver",
+      ":solution-stats",
+      "@com_google_absl//absl/flags:flag",
+      "@com_google_absl//absl/flags:parse",
+      "@com_google_absl//absl/types:span",
+      "@gl3w//:gl3w",
+      "@imgui//:imgui",
+      "@imgui//:imgui-impl",
+    ],
+    "//conditions:default": [],
+  }),
+  linkopts = select({
+    ":gui": ["-lGL", "-lglfw", "-lrt", "-lm", "-ldl"],
+    "//conditions:default": [],
+  }),
+)
+
 cc_library(
   name = "random-set-cover-instance",
   hdrs = ["random-set-cover-instance.h"],
@@ -166,26 +194,4 @@ cc_library(
     "@com_google_absl//absl/container:inlined_vector",
     "@com_google_absl//absl/synchronization",
   ],
-)
-
-cc_binary(
-  name = "visualizer",
-  srcs = select({
-    ":gui": ["visualizer.cc"],
-    "//conditions:default": ["dummy-visualizer.c"],
-  }),
-  deps = select({
-    ":gui": [
-      "@com_google_absl//absl/flags:flag",
-      "@com_google_absl//absl/flags:parse",
-      "@gl3w//:gl3w",
-      "@imgui//:imgui",
-      "@imgui//:imgui-impl",
-    ],
-    "//conditions:default": [],
-  }),
-  linkopts = select({
-    ":gui": ["-lGL", "-lglfw", "-lrt", "-lm", "-ldl"],
-    "//conditions:default": [],
-  }),
 )
