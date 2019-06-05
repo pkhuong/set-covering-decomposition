@@ -4,8 +4,11 @@ cc_binary(
   name = "random-set-cover",
   srcs = ["random-set-cover.cc"],
   deps = [
+    "@com_google_absl//absl/flags:flag",
+    "@com_google_absl//absl/flags:parse",
     "@com_google_absl//absl/types:span",
     ":driver",
+    ":random-set-cover-flags",
     ":random-set-cover-instance",
     ":set-cover-solver",
     ":solution-stats",
@@ -22,6 +25,7 @@ cc_binary(
   deps = select({
     ":gui": [
       ":driver",
+      ":random-set-cover-flags",
       ":random-set-cover-instance",
       ":set-cover-solver",
       ":solution-stats",
@@ -38,6 +42,15 @@ cc_binary(
     ":gui": ["-lGL", "-lglfw", "-lrt", "-lm", "-ldl"],
     "//conditions:default": [],
   }),
+)
+
+cc_library(
+  name = "random-set-cover-flags",
+  hdrs = ["random-set-cover-flags.h"],
+  srcs = ["random-set-cover-flags.cc"],
+  deps = [
+    "@com_google_absl//absl/flags:flag",
+  ],
 )
 
 cc_library(

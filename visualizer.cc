@@ -14,6 +14,7 @@
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/types/span.h"
+#include "random-set-cover-flags.h"
 #include "random-set-cover-instance.h"
 #include "set-cover-solver.h"
 #include "solution-stats.h"
@@ -21,13 +22,6 @@
 ABSL_FLAG(bool, dark_mode, true, "Enable dark mode theme");
 
 namespace {
-constexpr double kFeasEps = 5e-3;
-constexpr size_t kNumTours = 1000 * 1000;
-constexpr size_t kNumLocs = 10000;
-constexpr size_t kMaxTourPerLoc = 3;
-constexpr size_t kMaxIter = 100000;
-constexpr bool kCheckFeasible = false;
-
 void glfw_error_callback(int error, const char* description) {
   fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
@@ -95,8 +89,11 @@ int setup(GLFWwindow** window_ptr) {
 int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
 
-  RandomSetCoverInstance instance =
-      GenerateRandomInstance(kNumTours, kNumLocs, kMaxTourPerLoc);
+  const double kFeasEps = absl::GetFlag(FLAGS_feas_eps);
+
+  RandomSetCoverInstance instance = GenerateRandomInstance(
+      absl::GetFlag(FLAGS_num_sets), absl::GetFlag(FLAGS_num_values),
+      absl::GetFlag(FLAGS_max_set_per_value));
 
   GLFWwindow* window;
   {
@@ -114,8 +111,10 @@ int main(int argc, char** argv) {
                         absl::MakeSpan(instance.constraints));
 
   // XXX: add a way to cancel the thread and actually join it.
-  std::thread solver_thread(
-      [&solver] { solver.Drive(kMaxIter, kFeasEps, kCheckFeasible); });
+  std::thread solver_thread([kFeasEps, &solver] {
+    solver.Drive(absl::GetFlag(FLAGS_max_iter), kFeasEps,
+                 absl::GetFlag(FLAGS_check_feasible));
+  });
 
   bool text_summary_printed = false;
 
@@ -213,7 +212,8 @@ int main(int argc, char** argv) {
       ImGui::Text("Iteration #%zu", last_state.num_iterations);
       if (last_state.num_iterations > 0) {
         ImGui::Text("Current avg obj value: %f", last_state.obj_value);
-        ImGui::Text("Worst-case constraint infeas: %f", last_state.max_violation);
+        ImGui::Text("Worst-case constraint infeas: %f",
+                    last_state.max_violation);
       }
 
       ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
