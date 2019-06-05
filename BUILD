@@ -137,6 +137,7 @@ cc_binary(
   srcs = ["visualizer.cc"],
   deps = [
     "@com_google_absl//absl/flags:flag",
+    "@com_google_absl//absl/flags:parse",
     "@gl3w//:gl3w",
     "@imgui//:imgui",
     "@imgui//:imgui-impl",

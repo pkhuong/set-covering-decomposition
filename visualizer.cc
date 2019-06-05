@@ -9,6 +9,7 @@
 #include <GLFW/glfw3.h>  // NOFORMAT
 
 #include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
 
 ABSL_FLAG(bool, dark_mode, true, "Enable dark mode theme");
 
@@ -16,7 +17,9 @@ static void glfw_error_callback(int error, const char* description) {
   fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
-int main(int, char**) {
+int main(int argc, char** argv) {
+  absl::ParseCommandLine(argc, argv);
+
   // Setup window
   glfwSetErrorCallback(glfw_error_callback);
   if (!glfwInit()) return 1;
