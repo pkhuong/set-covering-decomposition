@@ -19,6 +19,7 @@ int main(int argc, char** argv) {
 
   RandomSetCoverInstance instance = GenerateRandomInstance(
       absl::GetFlag(FLAGS_num_sets), absl::GetFlag(FLAGS_num_values),
+      absl::GetFlag(FLAGS_min_set_per_value),
       absl::GetFlag(FLAGS_max_set_per_value));
 
   SetCoverSolver solver(instance.obj_values,

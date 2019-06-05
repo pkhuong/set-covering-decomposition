@@ -14,5 +14,6 @@ struct RandomSetCoverInstance {
 
 RandomSetCoverInstance GenerateRandomInstance(size_t num_sets,
                                               size_t num_values,
+                                              size_t min_set_per_value,
                                               size_t max_set_per_value);
 #endif /* !RANDOM_SET_COVER_INSTANCE_H */

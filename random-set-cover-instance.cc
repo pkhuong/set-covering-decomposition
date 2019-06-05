@@ -4,6 +4,7 @@
 
 RandomSetCoverInstance GenerateRandomInstance(size_t num_sets,
                                               size_t num_values,
+                                              size_t min_set_per_value,
                                               size_t max_set_per_value) {
   std::vector<double> obj_values;
   std::vector<std::vector<uint32_t>> sets_per_value;
@@ -13,8 +14,8 @@ RandomSetCoverInstance GenerateRandomInstance(size_t num_sets,
     std::mt19937 rng(dev());
 
     // First, generate all the sets.
-    std::uniform_int_distribution<size_t> num_set_dist(
-        (max_set_per_value + 1) / 2, max_set_per_value);
+    std::uniform_int_distribution<size_t> num_set_dist(min_set_per_value,
+                                                       max_set_per_value);
     std::uniform_real_distribution<> obj_value_dist(0.0, 10.0);
     std::vector<uint32_t> set_ids;
     for (size_t i = 0; i < num_sets; ++i) {
