@@ -1,4 +1,19 @@
-config_setting(name = "gui", values = {"define": "gui=yes"})
+config_setting(
+  name = "gui",
+  values = {"define": "gui=yes"},
+)
+
+config_setting(
+  name = "osx_gui",
+  constraint_values = ["@bazel_tools//platforms:osx"],
+  values = {"define": "gui=yes"},
+)
+
+config_setting(
+  name = "linux_gui",
+  constraint_values = ["@bazel_tools//platforms:linux"],
+  values = {"define": "gui=yes"},
+)
 
 cc_binary(
   name = "random-set-cover",
@@ -35,7 +50,8 @@ cc_binary(
     "//conditions:default": [],
   }),
   linkopts = select({
-    ":gui": ["-lGL", "-lglfw", "-lrt", "-lm", "-ldl"],
+    ":osx_gui": ["-framework OpenGL", "-lglfw", "-lm", "-ldl"],
+    ":linux_gui": ["-lGL", "-lglfw", "-lrt", "-lm", "-ldl"],
     "//conditions:default": [],
   }),
 )
