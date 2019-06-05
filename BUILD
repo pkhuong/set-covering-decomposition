@@ -9,7 +9,8 @@ cc_binary(
     "@com_google_absl//absl/types:span",
     ":driver",
     ":random-set-cover-instance",
-    ":set-cover-solver"
+    ":set-cover-solver",
+    ":solution-stats",
   ],
 )
 
@@ -32,6 +33,16 @@ cc_library(
     "@com_google_absl//absl/base:core_headers",
     "@com_google_absl//absl/synchronization",
     "@com_google_absl//absl/time:time",
+    "@com_google_absl//absl/types:span",
+  ],
+)
+
+cc_library(
+  name = "solution-stats",
+  hdrs = ["solution-stats.h"],
+  srcs = ["solution-stats.cc"],
+  deps = [
+    "@com_google_absl//absl/strings:str_format",
     "@com_google_absl//absl/types:span",
   ],
 )
