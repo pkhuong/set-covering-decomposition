@@ -150,14 +150,7 @@ std::pair<void *, size_t> BigVecArena::AcquireBytes(size_t min_size) {
   }
 
   size_t exact_size = round(4096);
-  void *ret = nullptr;
-  if (MAP_HUGETLB != 0) {
-    ret = AcquireRoundedBytes(exact_size, MAP_HUGETLB);
-  }
-  if (ret == nullptr) {
-    ret = AcquireRoundedBytes(exact_size, 0);
-  }
-
+  void *ret = AcquireRoundedBytes(exact_size, 0);
   std::clog << "Acquired " << exact_size / 1024 << "KB: " << ret << "\n";
   assert(ret != nullptr);
   return std::make_pair(ret, exact_size);
