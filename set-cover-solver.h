@@ -32,6 +32,7 @@ class SetCoverSolver {
   SetCoverSolver& operator=(SetCoverSolver&&) = delete;
 
   const SolverState& state() const { return state_; }
+  bool IsDone() const { return done_.HasBeenNotified(); }
   void WaitUntilDone() const { done_.WaitForNotification(); }
 
   // Solves until the average solution is `eps`-feasible, or
