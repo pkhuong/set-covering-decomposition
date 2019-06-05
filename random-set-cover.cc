@@ -35,7 +35,7 @@ int main(int, char**) {
   double max_infeas;
   {
     std::vector<double> infeas;
-    std::tie(least_coverage, infeas) =
+    std::tie(max_infeas, infeas) =
         ComputeCoverInfeasibility(solution, instance.sets_per_value);
     std::cout << "Violation\n";
     OutputHistogram(std::cout, BinValues(infeas, 25, kFeasEps),
