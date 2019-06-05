@@ -1,3 +1,0 @@
-libglfw3
-pkhuong@penguin:~$ sudo apt-get install libglfw3{-dev,-doc,-wayland}
-
