@@ -26,13 +26,10 @@ genrule(
   ],
   cmd = """
 external/gl3w/gl3w_gen.py --root $(RULEDIR);
-# keep old files in place to let gl3w_gen cache things.
+sed -e 's|<GL/glcorearb.h>|"GL/glcorearb.h"|' -i $(location include/GL/gl3w.h);
+sed -e 's|<GL/gl3w.h>|"GL/gl3w.h"|' -i $(location src/gl3w.c);
 cp -r $(RULEDIR)/include/GL $(RULEDIR);
 cp -r $(RULEDIR)/include/KHR $(RULEDIR);
-
-sed -e 's|<GL/glcorearb.h>|"GL/glcorearb.h"|' < $(location include/GL/gl3w.h) > $(location GL/gl3w.h);
-sed -e 's|<GL/gl3w.h>|"GL/gl3w.h"|' < $(location src/gl3w.c) > $(RULEDIR)/gl3w.tmp;
-mv $(RULEDIR)/gl3w.tmp $(location src/gl3w.c)
 """,
   local=True,
   message="Generating gl3w headers",
