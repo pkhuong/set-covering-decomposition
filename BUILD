@@ -1,3 +1,5 @@
+config_setting(name = "gui", values = {"define": "gui=yes"})
+
 cc_binary(
   name = "random-set-cover",
   srcs = ["random-set-cover.cc"],
@@ -134,13 +136,22 @@ cc_library(
 
 cc_binary(
   name = "visualizer",
-  srcs = ["visualizer.cc"],
-  deps = [
-    "@com_google_absl//absl/flags:flag",
-    "@com_google_absl//absl/flags:parse",
-    "@gl3w//:gl3w",
-    "@imgui//:imgui",
-    "@imgui//:imgui-impl",
-  ],
-  linkopts = ["-lGL", "-lglfw", "-lrt", "-lm", "-ldl"],
+  srcs = select({
+    ":gui": ["visualizer.cc"],
+    "//conditions:default": ["dummy-visualizer.c"],
+  }),
+  deps = select({
+    ":gui": [
+      "@com_google_absl//absl/flags:flag",
+      "@com_google_absl//absl/flags:parse",
+      "@gl3w//:gl3w",
+      "@imgui//:imgui",
+      "@imgui//:imgui-impl",
+    ],
+    "//conditions:default": [],
+  }),
+  linkopts = select({
+    ":gui": ["-lGL", "-lglfw", "-lrt", "-lm", "-ldl"],
+    "//conditions:default": [],
+  }),
 )
