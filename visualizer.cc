@@ -121,9 +121,8 @@ int main(int argc, char** argv) {
 
   struct {
     std::vector<double> solution;
-    size_t num_iterations = size_t{-1UL};
-    bool infeasible = false;
-    bool relaxation_optimal = false;
+    SetCoverSolver::ScalarState scalar;
+
     double obj_value = 0;
     double max_violation = 0;
     std::vector<double> infeas;
@@ -140,23 +139,23 @@ int main(int argc, char** argv) {
     bool any_change = false;
 
     if (solver.state().mu.TryLock()) {
-      if (solver.state().num_iterations != last_state.num_iterations) {
+      if (solver.state().scalar.num_iterations !=
+          last_state.scalar.num_iterations) {
         any_change = true;
-        last_state.num_iterations = solver.state().num_iterations;
+        last_state.scalar = solver.state().scalar;
+
         last_state.solution.clear();
         last_state.solution.reserve(solver.state().current_solution.size());
         // XXX: should SMR this up.
         for (double x : solver.state().current_solution) {
           last_state.solution.push_back(x);
         }
-        last_state.infeasible = solver.state().infeasible;
-        last_state.relaxation_optimal = solver.state().relaxation_optimal;
       }
 
       solver.state().mu.Unlock();
     }
 
-    if (any_change && last_state.num_iterations > 0) {
+    if (any_change && last_state.scalar.num_iterations > 0) {
       last_state.obj_value =
           ComputeObjectiveValue(last_state.solution, instance.obj_values);
       std::tie(last_state.max_violation, last_state.infeas) =
@@ -210,12 +209,9 @@ int main(int argc, char** argv) {
     {
       ImGui::Begin("Summary");
 
-      ImGui::Text("Iteration #%zu", last_state.num_iterations);
-      if (last_state.num_iterations > 0) {
-        ImGui::Text("Current avg obj value: %f", last_state.obj_value);
-        ImGui::Text("Worst-case constraint infeas: %f",
-                    last_state.max_violation);
-      }
+      ImGui::Text("Iteration #%zu", last_state.scalar.num_iterations);
+      ImGui::Text("Current avg obj value: %f", last_state.obj_value);
+      ImGui::Text("Worst-case constraint infeas: %f", last_state.max_violation);
 
       ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
                   1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
@@ -223,9 +219,9 @@ int main(int argc, char** argv) {
       const char* status;
       if (!done) {
         status = "iterating";
-      } else if (last_state.infeasible) {
+      } else if (last_state.scalar.infeasible) {
         status = "infeasible";
-      } else if (last_state.relaxation_optimal) {
+      } else if (last_state.scalar.relaxation_optimal) {
         status = "relaxation optimal.";
       } else {
         status = "COMPLETE.";
@@ -240,7 +236,7 @@ int main(int argc, char** argv) {
       ImGui::End();
     }
 
-    if (last_state.num_iterations > 0) {
+    if (last_state.scalar.num_iterations > 0) {
       {
         ImGui::Begin("Decision variable values");
         ImGui::Text("Decisions (0: %.2f%%)",

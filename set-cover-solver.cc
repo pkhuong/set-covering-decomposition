@@ -29,10 +29,10 @@ void SetCoverSolver::Drive(size_t max_iter, double eps, bool check_feasible) {
 
     {
       absl::MutexLock ml(&state_.mu);
-      state_.num_iterations = driver_.num_iterations;
-      state_.done = done;
-      state_.infeasible = infeasible;
-      state_.relaxation_optimal = relaxation_optimal;
+      state_.scalar.num_iterations = driver_.num_iterations;
+      state_.scalar.done = done;
+      state_.scalar.infeasible = infeasible;
+      state_.scalar.relaxation_optimal = relaxation_optimal;
       state_.current_solution.swap(current_solution);
     }
 

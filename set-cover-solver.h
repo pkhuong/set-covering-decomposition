@@ -12,14 +12,18 @@
 // This class is thread-compatible.
 class SetCoverSolver {
  public:
+  struct ScalarState {
+    size_t num_iterations{0};
+    bool done{false};
+    bool infeasible{false};
+    bool relaxation_optimal{false};
+  };
+
   struct SolverState {
     mutable absl::Mutex mu;
-    size_t num_iterations GUARDED_BY(mu){0};
-    bool done GUARDED_BY(mu);
-    bool infeasible GUARDED_BY(mu);
-    bool relaxation_optimal GUARDED_BY(mu);
-
     std::vector<double> current_solution GUARDED_BY(mu);
+
+    ScalarState scalar GUARDED_BY(mu);
   };
 
   // Both spans must outlive this instance.
