@@ -31,6 +31,7 @@ struct StateCache {
   std::vector<double> solution;
   SetCoverSolver::ScalarState scalar;
 
+  size_t delta_num_iterations = 0;
   double obj_value = 0;
   double max_violation = 0;
   std::vector<double> infeas;
@@ -189,7 +190,8 @@ void UpdateDerivedValues(const RandomSetCoverInstance& instance, bool slow,
 #define ADD_POINT(NAME, NAMES) AddPoint(cache->scalar.NAME, &cache->NAMES)
   ADD_POINT(sum_mix_gap, sum_mix_gaps);
   if (cache->sum_mix_gaps.size() > 1) {
-    const double delta = cache->sum_mix_gaps[0] - cache->sum_mix_gaps[1];
+    const double delta = (cache->sum_mix_gaps[0] - cache->sum_mix_gaps[1]) /
+                         cache->delta_num_iterations;
     const double rel_delta = delta / (cache->sum_mix_gaps[1] + 1e-6);
     AddPoint(100 * rel_delta, &cache->delta_sum_mix_gaps);
   } else {
@@ -207,7 +209,8 @@ void UpdateDerivedValues(const RandomSetCoverInstance& instance, bool slow,
 
     if (cache->max_gains.size() > 1) {
       // Newer value should be smaller.
-      const double delta = cache->max_gains[1] - cache->max_gains[0];
+      const double delta = (cache->max_gains[1] - cache->max_gains[0]) /
+                           cache->delta_num_iterations;
       const double rel_delta = delta / (std::abs(cache->max_gains[0]) + 1e-6);
       AddPoint(100 * rel_delta, &cache->delta_max_gains);
     } else {
@@ -216,7 +219,8 @@ void UpdateDerivedValues(const RandomSetCoverInstance& instance, bool slow,
   }
 
   if (cache->best_bounds.size() >= 2) {
-    const double delta = (cache->best_bounds[0] - cache->best_bounds[1]);
+    const double delta = (cache->best_bounds[0] - cache->best_bounds[1]) /
+                         cache->delta_num_iterations;
     const double rel_delta = delta / (std::abs(cache->best_bounds[1]) + 1e-6);
     AddPoint(100 * (rel_delta < 1e-6 ? 0 : rel_delta),
              &cache->delta_best_bounds);
@@ -292,6 +296,8 @@ int main(int argc, char** argv) {
       if (solver.state().scalar.num_iterations !=
           last_state.scalar.num_iterations) {
         any_change = true;
+        last_state.delta_num_iterations = solver.state().scalar.num_iterations -
+                                          last_state.scalar.num_iterations;
         last_state.scalar = solver.state().scalar;
 
         last_state.solution.clear();
