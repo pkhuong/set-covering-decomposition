@@ -45,6 +45,7 @@ struct StateCache {
   std::vector<float> update_times;
 
   std::vector<float> sum_mix_gaps;
+  std::vector<float> delta_sum_mix_gaps;
 
   std::vector<float> max_gains;        // - min avg loss
   std::vector<float> delta_max_gains;  // % difference between iterations
@@ -185,6 +186,13 @@ void UpdateDerivedValues(const RandomSetCoverInstance& instance,
 
 #define ADD_POINT(NAME, NAMES) AddPoint(cache->scalar.NAME, &cache->NAMES)
   ADD_POINT(sum_mix_gap, sum_mix_gaps);
+  if (cache->sum_mix_gaps.size() > 1) {
+    const double delta = cache->sum_mix_gaps[0] - cache->sum_mix_gaps[1];
+    const double rel_delta = delta / (cache->sum_mix_gaps[1] + 1e-6);
+    AddPoint(100 * rel_delta, &cache->delta_sum_mix_gaps);
+  } else {
+    AddPoint(0.0, &cache->delta_sum_mix_gaps);
+  }
 
   ADD_POINT(best_bound, best_bounds);
   ADD_POINT(last_solution_value, solution_values);
@@ -397,7 +405,7 @@ int main(int argc, char** argv) {
       }
 
       {
-        ImGui::Begin("Primal / dual");
+        ImGui::Begin("Primal");
 
         const double scale = 1.0 / last_state.scalar.num_iterations;
         ImGui::Text("Best bound %.2f, avg value %.2f, avg feas %.4f",
@@ -409,13 +417,20 @@ int main(int argc, char** argv) {
         PlotNarrowLines("Best - avg %", last_state.best_bound_avg_gaps);
         PlotNarrowLines("Avg sol value", last_state.avg_solution_values);
         PlotNarrowLines("Avg sol feas", last_state.avg_solution_feasilities);
+      }
 
-        ImGui::Text("mix gap %.2f, min loss %.4f (%+.4f%%), max loss %.2f",
+      {
+        ImGui::Begin("Dual");
+
+        const double scale = 1.0 / last_state.scalar.num_iterations;
+        ImGui::Text("mix gap %.2f (%+.4f%%)\nloss min=%.4f (%+.4f%%) max=%.2f",
                     last_state.scalar.sum_mix_gap,
+                    last_state.delta_sum_mix_gaps.front(),
                     scale * last_state.scalar.min_loss,
                     last_state.delta_max_gains.front(),
                     scale * last_state.scalar.max_loss);
         PlotNarrowLines("mix gap", last_state.sum_mix_gaps);
+        PlotNarrowLines("delta mix gap %", last_state.delta_sum_mix_gaps);
         PlotNarrowLines("max gain", last_state.max_gains);
         PlotNarrowLines("delta max gain %", last_state.delta_max_gains);
         PlotNarrowLines("max loss", last_state.max_losses);
