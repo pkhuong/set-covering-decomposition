@@ -23,8 +23,8 @@ ABSL_FLAG(bool, dark_mode, true, "Enable dark mode theme");
 ABSL_FLAG(size_t, history_limit, 100,
           "Show up to this many historical data points.");
 
-ABSL_FLAG(double, refresh_period_ms, 100,
-          "Minimum time in milliseconds between data refreshes.");
+ABSL_FLAG(double, refresh_period_ms, 250,
+          "Minimum time in milliseconds between slow data refreshes.");
 
 namespace {
 struct StateCache {
@@ -140,37 +140,39 @@ void AddTimeObservation(const absl::Duration observation,
   AddPoint(1000 * absl::ToDoubleSeconds(observation), out);
 }
 
-void UpdateDerivedValues(const RandomSetCoverInstance& instance,
+void UpdateDerivedValues(const RandomSetCoverInstance& instance, bool slow,
                          StateCache* cache) {
   const double kFeasEps = absl::GetFlag(FLAGS_feas_eps);
 
-  cache->obj_value =
-      ComputeObjectiveValue(cache->solution, instance.obj_values);
-  std::tie(cache->max_violation, cache->infeas) =
-      ComputeCoverInfeasibility(cache->solution, instance.sets_per_value);
-  {
-    const auto infeas_bins = BinValues(cache->infeas, 100, kFeasEps);
-    cache->infeas_bins.clear();
-    for (const auto& entry : infeas_bins) {
-      cache->infeas_bins.push_back(entry.second);
-    }
-  }
-
-  {
-    const auto sol_bins = BinValues(cache->solution, 100, kFeasEps);
-    cache->solution_bins.clear();
-    cache->non_zero_solution_bins.clear();
-    double scale;
-    bool first = true;
-    for (const auto& entry : sol_bins) {
-      cache->solution_bins.push_back(entry.second);
-      if (first) {
-        scale = 1 / (1.0 - entry.second);
-      } else {
-        cache->non_zero_solution_bins.push_back(entry.second * scale);
+  if (slow) {
+    cache->obj_value =
+        ComputeObjectiveValue(cache->solution, instance.obj_values);
+    std::tie(cache->max_violation, cache->infeas) =
+        ComputeCoverInfeasibility(cache->solution, instance.sets_per_value);
+    {
+      const auto infeas_bins = BinValues(cache->infeas, 100, kFeasEps);
+      cache->infeas_bins.clear();
+      for (const auto& entry : infeas_bins) {
+        cache->infeas_bins.push_back(entry.second);
       }
+    }
 
-      first = false;
+    {
+      const auto sol_bins = BinValues(cache->solution, 100, kFeasEps);
+      cache->solution_bins.clear();
+      cache->non_zero_solution_bins.clear();
+      double scale;
+      bool first = true;
+      for (const auto& entry : sol_bins) {
+        cache->solution_bins.push_back(entry.second);
+        if (first) {
+          scale = 1 / (1.0 - entry.second);
+        } else {
+          cache->non_zero_solution_bins.push_back(entry.second * scale);
+        }
+
+        first = false;
+      }
     }
   }
 
@@ -277,7 +279,7 @@ int main(int argc, char** argv) {
   bool text_summary_printed = false;
 
   struct StateCache last_state;
-  absl::Time last_update = absl::InfinitePast();
+  absl::Time last_slow_update = absl::InfinitePast();
 
   // Main loop
   while (!glfwWindowShouldClose(window)) {
@@ -286,12 +288,9 @@ int main(int argc, char** argv) {
     const bool done = solver.IsDone();
     bool any_change = false;
 
-    if (absl::Now() - last_update >=
-            absl::Milliseconds(absl::GetFlag(FLAGS_refresh_period_ms)) &&
-        solver.state().mu.TryLock()) {
+    if (solver.state().mu.TryLock()) {
       if (solver.state().scalar.num_iterations !=
           last_state.scalar.num_iterations) {
-        last_update = absl::Now();
         any_change = true;
         last_state.scalar = solver.state().scalar;
 
@@ -307,7 +306,13 @@ int main(int argc, char** argv) {
     }
 
     if (any_change && last_state.scalar.num_iterations > 0) {
-      UpdateDerivedValues(instance, &last_state);
+      const absl::Duration period =
+          absl::Milliseconds(absl::GetFlag(FLAGS_refresh_period_ms));
+      const bool slow_update = absl::Now() - last_slow_update >= period;
+      UpdateDerivedValues(instance, slow_update, &last_state);
+      if (slow_update) {
+        last_slow_update = absl::Now();
+      }
     }
 
     if (any_change && done && !text_summary_printed) {
