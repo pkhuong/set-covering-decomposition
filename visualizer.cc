@@ -42,11 +42,13 @@ struct StateCache {
   std::vector<float> update_times;
 
   std::vector<float> sum_mix_gaps;
-  std::vector<float> min_losses;
-  std::vector<float> max_losses;
+
+  std::vector<float> max_gains;        // - min avg loss
+  std::vector<float> delta_max_gains;  // % difference between iterations
+  std::vector<float> max_losses;       // max avg loss
 
   std::vector<float> best_bounds;
-  std::vector<float> delta_best_bounds;    // difference between iterations
+  std::vector<float> delta_best_bounds;    // % difference between iterations
   std::vector<float> best_bound_avg_gaps;  // best_bound - avg_solution_value.
   std::vector<float> avg_solution_values;
   std::vector<float> avg_solution_feasilities;
@@ -180,15 +182,30 @@ void UpdateDerivedValues(const RandomSetCoverInstance& instance,
 
 #define ADD_POINT(NAME, NAMES) AddPoint(cache->scalar.NAME, &cache->NAMES)
   ADD_POINT(sum_mix_gap, sum_mix_gaps);
-  ADD_POINT(min_loss, min_losses);
-  ADD_POINT(max_loss, max_losses);
 
   ADD_POINT(best_bound, best_bounds);
   ADD_POINT(last_solution_value, solution_values);
 #undef ADD_POINT
 
+  {
+    const double scale = 1.0 / cache->scalar.num_iterations;
+    AddPoint(-scale * cache->scalar.min_loss, &cache->max_gains);
+    AddPoint(scale * cache->scalar.max_loss, &cache->max_losses);
+
+    if (cache->max_gains.size() > 1) {
+      // Newer value should be smaller.
+      const double delta = cache->max_gains[1] - cache->max_gains[0];
+      const double rel_delta = delta / (std::abs(cache->max_gains[0]) + 1e-6);
+      AddPoint(100 * rel_delta, &cache->delta_max_gains);
+    } else {
+      AddPoint(0.0, &cache->delta_max_gains);
+    }
+  }
+
   if (cache->best_bounds.size() >= 2) {
-    AddPoint(cache->best_bounds[0] - cache->best_bounds[1],
+    const double delta = (cache->best_bounds[0] - cache->best_bounds[1]);
+    const double rel_delta = delta / (std::abs(cache->best_bounds[1]) + 1e-6);
+    AddPoint(100 * (rel_delta < 1e-6 ? 0 : rel_delta),
              &cache->delta_best_bounds);
   } else {
     AddPoint(0, &cache->delta_best_bounds);
@@ -196,7 +213,11 @@ void UpdateDerivedValues(const RandomSetCoverInstance& instance,
 
   const double avg_value =
       cache->scalar.sum_solution_value / cache->scalar.num_iterations;
-  AddPoint(cache->scalar.best_bound - avg_value, &cache->best_bound_avg_gaps);
+  // Stabilized relative gap.
+  const double gap = (cache->scalar.best_bound - avg_value) /
+                     (std::abs(cache->scalar.best_bound) + 1e-6);
+  // And clamp anything in the noise to 0.
+  AddPoint(100 * (gap < 1e-4 ? 0 : gap), &cache->best_bound_avg_gaps);
   AddPoint(avg_value, &cache->avg_solution_values);
   AddPoint(
       cache->scalar.sum_solution_feasibility / cache->scalar.num_iterations,
@@ -370,17 +391,27 @@ int main(int argc, char** argv) {
 
       {
         ImGui::Begin("Primal / dual");
-        ImGui::Text("Best bound %.2f, avg value %.2f, avg feas %.2f",
+
+        const double scale = 1.0 / last_state.scalar.num_iterations;
+        ImGui::Text("Best bound %.2f, avg value %.2f, avg feas %.4f",
                     last_state.scalar.best_bound,
-                    last_state.scalar.sum_solution_value /
-                        last_state.scalar.num_iterations,
-                    last_state.scalar.sum_solution_feasibility /
-                        last_state.scalar.num_iterations);
-        PlotNarrowLines("Delta bound", last_state.delta_best_bounds);
+                    scale * last_state.scalar.sum_solution_value,
+                    scale * last_state.scalar.sum_solution_feasibility);
+        PlotNarrowLines("Delta bound %", last_state.delta_best_bounds);
         PlotNarrowLines("Best bound", last_state.best_bounds);
-        PlotNarrowLines("Best - avg gap", last_state.best_bound_avg_gaps);
+        PlotNarrowLines("Best - avg %", last_state.best_bound_avg_gaps);
         PlotNarrowLines("Avg sol value", last_state.avg_solution_values);
         PlotNarrowLines("Avg sol feas", last_state.avg_solution_feasilities);
+
+        ImGui::Text("mix gap %.2f, min loss %.4f (%+.4f%%), max loss %.2f",
+                    last_state.scalar.sum_mix_gap,
+                    scale * last_state.scalar.min_loss,
+                    last_state.delta_max_gains.front(),
+                    scale * last_state.scalar.max_loss);
+        PlotNarrowLines("mix gap", last_state.sum_mix_gaps);
+        PlotNarrowLines("max gain", last_state.max_gains);
+        PlotNarrowLines("delta max gain %", last_state.delta_max_gains);
+        PlotNarrowLines("max loss", last_state.max_losses);
         ImGui::End();
       }
     }
