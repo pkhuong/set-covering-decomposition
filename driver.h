@@ -42,6 +42,12 @@ struct DriverState {
   absl::Duration knapsack_time;
   absl::Duration observe_time;
   absl::Duration update_time;
+
+  absl::Duration last_iteration_time;
+  absl::Duration last_prepare_time;
+  absl::Duration last_knapsack_time;
+  absl::Duration last_observe_time;
+  absl::Duration last_update_time;
 };
 
 void DriveOneIteration(absl::Span<CoverConstraint> constraints,
