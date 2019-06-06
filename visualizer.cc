@@ -23,6 +23,9 @@ ABSL_FLAG(bool, dark_mode, true, "Enable dark mode theme");
 ABSL_FLAG(size_t, history_limit, 100,
           "Show up to this many historical data points.");
 
+ABSL_FLAG(double, refresh_period_ms, 100,
+          "Minimum time in milliseconds between data refreshes.");
+
 namespace {
 struct StateCache {
   std::vector<double> solution;
@@ -266,6 +269,7 @@ int main(int argc, char** argv) {
   bool text_summary_printed = false;
 
   struct StateCache last_state;
+  absl::Time last_update = absl::InfinitePast();
 
   // Main loop
   while (!glfwWindowShouldClose(window)) {
@@ -274,9 +278,12 @@ int main(int argc, char** argv) {
     const bool done = solver.IsDone();
     bool any_change = false;
 
-    if (solver.state().mu.TryLock()) {
+    if (absl::Now() - last_update >=
+            absl::Milliseconds(absl::GetFlag(FLAGS_refresh_period_ms)) &&
+        solver.state().mu.TryLock()) {
       if (solver.state().scalar.num_iterations !=
           last_state.scalar.num_iterations) {
+        last_update = absl::Now();
         any_change = true;
         last_state.scalar = solver.state().scalar;
 
