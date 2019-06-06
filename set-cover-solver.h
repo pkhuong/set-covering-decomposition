@@ -5,6 +5,7 @@
 #include "absl/base/thread_annotations.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/synchronization/notification.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "cover-constraint.h"
 #include "driver.h"
@@ -17,6 +18,28 @@ class SetCoverSolver {
     bool done{false};
     bool infeasible{false};
     bool relaxation_optimal{false};
+
+    double sum_mix_gap{0.0};
+    double min_loss{0.0};
+    double max_loss{0.0};
+    double best_bound{0.0};
+
+    double sum_solution_value{0.0};
+    double sum_solution_feasibility{0.0};
+
+    double last_solution_value{0.0};
+
+    absl::Duration total_time;
+    absl::Duration prepare_time;
+    absl::Duration knapsack_time;
+    absl::Duration observe_time;
+    absl::Duration update_time;
+
+    absl::Duration last_iteration_time;
+    absl::Duration last_prepare_time;
+    absl::Duration last_knapsack_time;
+    absl::Duration last_observe_time;
+    absl::Duration last_update_time;
   };
 
   struct SolverState {

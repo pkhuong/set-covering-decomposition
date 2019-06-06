@@ -29,11 +29,34 @@ void SetCoverSolver::Drive(size_t max_iter, double eps, bool check_feasible) {
 
     {
       absl::MutexLock ml(&state_.mu);
+      state_.current_solution.swap(current_solution);
+
       state_.scalar.num_iterations = driver_.num_iterations;
       state_.scalar.done = done;
       state_.scalar.infeasible = infeasible;
       state_.scalar.relaxation_optimal = relaxation_optimal;
-      state_.current_solution.swap(current_solution);
+
+      state_.scalar.sum_mix_gap = driver_.sum_mix_gap;
+      state_.scalar.min_loss = driver_.prev_min_loss;
+      state_.scalar.max_loss = driver_.prev_max_loss;
+      state_.scalar.best_bound = driver_.best_bound;
+
+      state_.scalar.sum_solution_value = driver_.sum_solution_value;
+      state_.scalar.sum_solution_feasibility = driver_.sum_solution_feasibility;
+
+      state_.scalar.last_solution_value = driver_.last_solution_value;
+
+      state_.scalar.total_time = driver_.total_time;
+      state_.scalar.prepare_time = driver_.prepare_time;
+      state_.scalar.knapsack_time = driver_.knapsack_time;
+      state_.scalar.observe_time = driver_.observe_time;
+      state_.scalar.update_time = driver_.update_time;
+
+      state_.scalar.last_iteration_time = driver_.last_iteration_time;
+      state_.scalar.last_prepare_time = driver_.last_prepare_time;
+      state_.scalar.last_knapsack_time = driver_.last_knapsack_time;
+      state_.scalar.last_observe_time = driver_.last_observe_time;
+      state_.scalar.last_update_time = driver_.last_update_time;
     }
 
     if (i < 10 || ((i + 1) % 100) == 0 || done || infeasible ||
