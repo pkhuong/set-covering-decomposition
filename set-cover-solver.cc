@@ -27,8 +27,7 @@ void SetCoverSolver::Drive(size_t max_iter, double eps, bool check_feasible) {
       }
     }
 
-    {
-      absl::MutexLock ml(&state_.mu);
+    if (state_.mu.TryLock()) {
       state_.current_solution.swap(current_solution);
 
       state_.scalar.num_iterations = driver_.num_iterations;
@@ -57,6 +56,8 @@ void SetCoverSolver::Drive(size_t max_iter, double eps, bool check_feasible) {
       state_.scalar.last_knapsack_time = driver_.last_knapsack_time;
       state_.scalar.last_observe_time = driver_.last_observe_time;
       state_.scalar.last_update_time = driver_.last_update_time;
+
+      state_.mu.Unlock();
     }
 
     if (i < 10 || ((i + 1) % 100) == 0 || done || infeasible ||
