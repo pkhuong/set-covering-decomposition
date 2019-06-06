@@ -327,11 +327,11 @@ int main(int argc, char** argv) {
         ImGui::Begin("Decision variable values");
         ImGui::Text("Decisions (0: %.2f%%)",
                     100 * last_state.solution_bins.front());
-        ImGui::PlotLines("", last_state.non_zero_solution_bins.data(),
-                         last_state.non_zero_solution_bins.size(),
-                         /*values_offset=*/0, /*overlay_text=*/nullptr,
-                         /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
-                         /*graph_size=*/ImVec2(400, 300));
+        ImGui::PlotHistogram("", last_state.non_zero_solution_bins.data(),
+                             last_state.non_zero_solution_bins.size(),
+                             /*values_offset=*/0, /*overlay_text=*/nullptr,
+                             /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
+                             /*graph_size=*/ImVec2(400, 300));
         ImGui::End();
       }
 
@@ -340,11 +340,11 @@ int main(int argc, char** argv) {
         ImGui::Text(
             "Violation (<= eps: %.2f%%)",
             100 * (last_state.infeas_bins.front() + last_state.infeas_bins[1]));
-        ImGui::PlotLines("", last_state.infeas_bins.data(),
-                         last_state.infeas_bins.size(),
-                         /*values_offset=*/0, /*overlay_text=*/nullptr,
-                         /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
-                         /*graph_size=*/ImVec2(400, 300));
+        ImGui::PlotHistogram("", last_state.infeas_bins.data(),
+                             last_state.infeas_bins.size(),
+                             /*values_offset=*/0, /*overlay_text=*/nullptr,
+                             /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
+                             /*graph_size=*/ImVec2(400, 300));
 
         ImGui::End();
       }
