@@ -20,7 +20,7 @@
 #include "solution-stats.h"
 
 ABSL_FLAG(bool, dark_mode, true, "Enable dark mode theme");
-ABSL_FLAG(size_t, history_limit, 1000,
+ABSL_FLAG(size_t, history_limit, 100,
           "Show up to this many historical data points.");
 
 namespace {
@@ -40,6 +40,17 @@ struct StateCache {
   std::vector<float> knapsack_times;
   std::vector<float> observe_times;
   std::vector<float> update_times;
+
+  std::vector<float> sum_mix_gaps;
+  std::vector<float> min_losses;
+  std::vector<float> max_losses;
+
+  std::vector<float> best_bounds;
+  std::vector<float> delta_best_bounds;    // difference between iterations
+  std::vector<float> best_bound_avg_gaps;  // best_bound - avg_solution_value.
+  std::vector<float> avg_solution_values;
+  std::vector<float> avg_solution_feasilities;
+  std::vector<float> solution_values;
 };
 
 void glfw_error_callback(int error, const char* description) {
@@ -105,14 +116,22 @@ int setup(GLFWwindow** window_ptr) {
   return 0;
 }
 
-// Always in milliseconds.
-void AddTimeObservation(const absl::Duration observation,
-                        std::vector<float>* out) {
+// Adds `observation` to the front of `out`, and truncates history if
+// necessary.
+void AddPoint(float observation, std::vector<float>* out) {
   const size_t limit = absl::GetFlag(FLAGS_history_limit);
-  out->insert(out->begin(), 1000 * absl::ToDoubleSeconds(observation));
+
+  out->insert(out->begin(), observation);
   if (out->size() > limit) {
     out->resize(limit);
   }
+}
+
+// Adds `observation` in milliseconds to the front of out, and
+// truncates history if necessary.
+void AddTimeObservation(const absl::Duration observation,
+                        std::vector<float>* out) {
+  AddPoint(1000 * absl::ToDoubleSeconds(observation), out);
 }
 
 void UpdateDerivedValues(const RandomSetCoverInstance& instance,
@@ -149,12 +168,46 @@ void UpdateDerivedValues(const RandomSetCoverInstance& instance,
     }
   }
 
-  AddTimeObservation(cache->scalar.last_iteration_time,
-                     &cache->iteration_times);
-  AddTimeObservation(cache->scalar.last_prepare_time, &cache->prepare_times);
-  AddTimeObservation(cache->scalar.last_knapsack_time, &cache->knapsack_times);
-  AddTimeObservation(cache->scalar.last_observe_time, &cache->observe_times);
-  AddTimeObservation(cache->scalar.last_update_time, &cache->update_times);
+#define ADD_TIME(NAME) \
+  AddTimeObservation(cache->scalar.last_##NAME##_time, &cache->NAME##_times)
+
+  ADD_TIME(iteration);
+  ADD_TIME(prepare);
+  ADD_TIME(knapsack);
+  ADD_TIME(observe);
+  ADD_TIME(update);
+#undef ADD_TIME
+
+#define ADD_POINT(NAME, NAMES) AddPoint(cache->scalar.NAME, &cache->NAMES)
+  ADD_POINT(sum_mix_gap, sum_mix_gaps);
+  ADD_POINT(min_loss, min_losses);
+  ADD_POINT(max_loss, max_losses);
+
+  ADD_POINT(best_bound, best_bounds);
+  ADD_POINT(last_solution_value, solution_values);
+#undef ADD_POINT
+
+  if (cache->best_bounds.size() >= 2) {
+    AddPoint(cache->best_bounds[0] - cache->best_bounds[1],
+             &cache->delta_best_bounds);
+  } else {
+    AddPoint(0, &cache->delta_best_bounds);
+  }
+
+  const double avg_value =
+      cache->scalar.sum_solution_value / cache->scalar.num_iterations;
+  AddPoint(cache->scalar.best_bound - avg_value, &cache->best_bound_avg_gaps);
+  AddPoint(avg_value, &cache->avg_solution_values);
+  AddPoint(
+      cache->scalar.sum_solution_feasibility / cache->scalar.num_iterations,
+      &cache->avg_solution_feasilities);
+}
+
+void PlotNarrowLines(const char* label, absl::Span<const float> values) {
+  ImGui::PlotLines(label, values.data(), values.size(),
+                   /*values_offset=*/0, /*overlay_text=*/nullptr,
+                   /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
+                   /*graph_size=*/ImVec2(300, 25));
 }
 }  // namespace
 
@@ -307,31 +360,27 @@ int main(int argc, char** argv) {
             scale * absl::ToDoubleSeconds(last_state.scalar.knapsack_time),
             scale * absl::ToDoubleSeconds(last_state.scalar.observe_time),
             scale * absl::ToDoubleSeconds(last_state.scalar.update_time));
-        ImGui::PlotLines("Iteration", last_state.iteration_times.data(),
-                         last_state.iteration_times.size(),
-                         /*values_offset=*/0, /*overlay_text=*/nullptr,
-                         /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
-                         /*graph_size=*/ImVec2(400, 30));
-        ImGui::PlotLines("Prepare", last_state.prepare_times.data(),
-                         last_state.prepare_times.size(),
-                         /*values_offset=*/0, /*overlay_text=*/nullptr,
-                         /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
-                         /*graph_size=*/ImVec2(400, 30));
-        ImGui::PlotLines("Knapsack", last_state.knapsack_times.data(),
-                         last_state.knapsack_times.size(),
-                         /*values_offset=*/0, /*overlay_text=*/nullptr,
-                         /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
-                         /*graph_size=*/ImVec2(400, 30));
-        ImGui::PlotLines("Observe", last_state.observe_times.data(),
-                         last_state.observe_times.size(),
-                         /*values_offset=*/0, /*overlay_text=*/nullptr,
-                         /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
-                         /*graph_size=*/ImVec2(400, 30));
-        ImGui::PlotLines("Update", last_state.update_times.data(),
-                         last_state.update_times.size(),
-                         /*values_offset=*/0, /*overlay_text=*/nullptr,
-                         /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
-                         /*graph_size=*/ImVec2(400, 30));
+        PlotNarrowLines("Iteration", last_state.iteration_times);
+        PlotNarrowLines("Prepare", last_state.prepare_times);
+        PlotNarrowLines("Knapsack", last_state.knapsack_times);
+        PlotNarrowLines("Observe", last_state.observe_times);
+        PlotNarrowLines("Update", last_state.update_times);
+        ImGui::End();
+      }
+
+      {
+        ImGui::Begin("Primal / dual");
+        ImGui::Text("Best bound %.2f, avg value %.2f, avg feas %.2f",
+                    last_state.scalar.best_bound,
+                    last_state.scalar.sum_solution_value /
+                        last_state.scalar.num_iterations,
+                    last_state.scalar.sum_solution_feasibility /
+                        last_state.scalar.num_iterations);
+        PlotNarrowLines("Delta bound", last_state.delta_best_bounds);
+        PlotNarrowLines("Best bound", last_state.best_bounds);
+        PlotNarrowLines("Best - avg gap", last_state.best_bound_avg_gaps);
+        PlotNarrowLines("Avg sol value", last_state.avg_solution_values);
+        PlotNarrowLines("Avg sol feas", last_state.avg_solution_feasilities);
         ImGui::End();
       }
     }
