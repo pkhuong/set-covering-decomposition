@@ -20,8 +20,28 @@
 #include "solution-stats.h"
 
 ABSL_FLAG(bool, dark_mode, true, "Enable dark mode theme");
+ABSL_FLAG(size_t, history_limit, 1000,
+          "Show up to this many historical data points.");
 
 namespace {
+struct StateCache {
+  std::vector<double> solution;
+  SetCoverSolver::ScalarState scalar;
+
+  double obj_value = 0;
+  double max_violation = 0;
+  std::vector<double> infeas;
+  std::vector<float> infeas_bins;
+  std::vector<float> solution_bins;
+  std::vector<float> non_zero_solution_bins;
+
+  std::vector<float> iteration_times;
+  std::vector<float> prepare_times;
+  std::vector<float> knapsack_times;
+  std::vector<float> observe_times;
+  std::vector<float> update_times;
+};
+
 void glfw_error_callback(int error, const char* description) {
   fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
@@ -84,6 +104,58 @@ int setup(GLFWwindow** window_ptr) {
   ImGui_ImplOpenGL3_Init(glsl_version);
   return 0;
 }
+
+// Always in milliseconds.
+void AddTimeObservation(const absl::Duration observation,
+                        std::vector<float>* out) {
+  const size_t limit = absl::GetFlag(FLAGS_history_limit);
+  out->insert(out->begin(), 1000 * absl::ToDoubleSeconds(observation));
+  if (out->size() > limit) {
+    out->resize(limit);
+  }
+}
+
+void UpdateDerivedValues(const RandomSetCoverInstance& instance,
+                         StateCache* cache) {
+  const double kFeasEps = absl::GetFlag(FLAGS_feas_eps);
+
+  cache->obj_value =
+      ComputeObjectiveValue(cache->solution, instance.obj_values);
+  std::tie(cache->max_violation, cache->infeas) =
+      ComputeCoverInfeasibility(cache->solution, instance.sets_per_value);
+  {
+    const auto infeas_bins = BinValues(cache->infeas, 100, kFeasEps);
+    cache->infeas_bins.clear();
+    for (const auto& entry : infeas_bins) {
+      cache->infeas_bins.push_back(entry.second);
+    }
+  }
+
+  {
+    const auto sol_bins = BinValues(cache->solution, 100, kFeasEps);
+    cache->solution_bins.clear();
+    cache->non_zero_solution_bins.clear();
+    double scale;
+    bool first = true;
+    for (const auto& entry : sol_bins) {
+      cache->solution_bins.push_back(entry.second);
+      if (first) {
+        scale = 1 / (1.0 - entry.second);
+      } else {
+        cache->non_zero_solution_bins.push_back(entry.second * scale);
+      }
+
+      first = false;
+    }
+  }
+
+  AddTimeObservation(cache->scalar.last_iteration_time,
+                     &cache->iteration_times);
+  AddTimeObservation(cache->scalar.last_prepare_time, &cache->prepare_times);
+  AddTimeObservation(cache->scalar.last_knapsack_time, &cache->knapsack_times);
+  AddTimeObservation(cache->scalar.last_observe_time, &cache->observe_times);
+  AddTimeObservation(cache->scalar.last_update_time, &cache->update_times);
+}
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -119,17 +191,7 @@ int main(int argc, char** argv) {
 
   bool text_summary_printed = false;
 
-  struct {
-    std::vector<double> solution;
-    SetCoverSolver::ScalarState scalar;
-
-    double obj_value = 0;
-    double max_violation = 0;
-    std::vector<double> infeas;
-    std::vector<float> infeas_bins;
-    std::vector<float> solution_bins;
-    std::vector<float> non_zero_solution_bins;
-  } last_state;
+  struct StateCache last_state;
 
   // Main loop
   while (!glfwWindowShouldClose(window)) {
@@ -156,36 +218,7 @@ int main(int argc, char** argv) {
     }
 
     if (any_change && last_state.scalar.num_iterations > 0) {
-      last_state.obj_value =
-          ComputeObjectiveValue(last_state.solution, instance.obj_values);
-      std::tie(last_state.max_violation, last_state.infeas) =
-          ComputeCoverInfeasibility(last_state.solution,
-                                    instance.sets_per_value);
-      {
-        const auto infeas_bins = BinValues(last_state.infeas, 100, kFeasEps);
-        last_state.infeas_bins.clear();
-        for (const auto& entry : infeas_bins) {
-          last_state.infeas_bins.push_back(entry.second);
-        }
-      }
-
-      {
-        const auto sol_bins = BinValues(last_state.solution, 100, kFeasEps);
-        last_state.solution_bins.clear();
-        last_state.non_zero_solution_bins.clear();
-        double scale;
-        bool first = true;
-        for (const auto& entry : sol_bins) {
-          last_state.solution_bins.push_back(entry.second);
-          if (first) {
-            scale = 1 / (1.0 - entry.second);
-          } else {
-            last_state.non_zero_solution_bins.push_back(entry.second * scale);
-          }
-
-          first = false;
-        }
-      }
+      UpdateDerivedValues(instance, &last_state);
     }
 
     if (any_change && done && !text_summary_printed) {
@@ -260,6 +293,45 @@ int main(int argc, char** argv) {
                          /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
                          /*graph_size=*/ImVec2(400, 300));
 
+        ImGui::End();
+      }
+
+      {
+        ImGui::Begin("Timings");
+
+        const double scale = 1000.0 / last_state.scalar.num_iterations;
+        ImGui::Text(
+            "Avg %.2fms\nprep=%.2fms knap=%.2fms obs=%.2fms upd=%.2fms",
+            scale * absl::ToDoubleSeconds(last_state.scalar.total_time),
+            scale * absl::ToDoubleSeconds(last_state.scalar.prepare_time),
+            scale * absl::ToDoubleSeconds(last_state.scalar.knapsack_time),
+            scale * absl::ToDoubleSeconds(last_state.scalar.observe_time),
+            scale * absl::ToDoubleSeconds(last_state.scalar.update_time));
+        ImGui::PlotLines("Iteration", last_state.iteration_times.data(),
+                         last_state.iteration_times.size(),
+                         /*values_offset=*/0, /*overlay_text=*/nullptr,
+                         /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
+                         /*graph_size=*/ImVec2(400, 30));
+        ImGui::PlotLines("Prepare", last_state.prepare_times.data(),
+                         last_state.prepare_times.size(),
+                         /*values_offset=*/0, /*overlay_text=*/nullptr,
+                         /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
+                         /*graph_size=*/ImVec2(400, 30));
+        ImGui::PlotLines("Knapsack", last_state.knapsack_times.data(),
+                         last_state.knapsack_times.size(),
+                         /*values_offset=*/0, /*overlay_text=*/nullptr,
+                         /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
+                         /*graph_size=*/ImVec2(400, 30));
+        ImGui::PlotLines("Observe", last_state.observe_times.data(),
+                         last_state.observe_times.size(),
+                         /*values_offset=*/0, /*overlay_text=*/nullptr,
+                         /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
+                         /*graph_size=*/ImVec2(400, 30));
+        ImGui::PlotLines("Update", last_state.update_times.data(),
+                         last_state.update_times.size(),
+                         /*values_offset=*/0, /*overlay_text=*/nullptr,
+                         /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
+                         /*graph_size=*/ImVec2(400, 30));
         ImGui::End();
       }
     }
