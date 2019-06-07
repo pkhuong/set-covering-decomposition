@@ -233,10 +233,13 @@ void UpdateDerivedValues(const RandomSetCoverInstance& instance, bool slow,
       &cache->avg_solution_feasilities);
 }
 
-void PlotHistoricValues(const char* label, absl::Span<const float> values) {
+void PlotHistoricValues(const char* label, absl::Span<const float> values,
+                        int history_window) {
   constexpr int kStride = sizeof(float);
 
-  const size_t limit = absl::GetFlag(FLAGS_history_limit);
+  const size_t limit = (history_window > 0)
+                           ? history_window
+                           : absl::GetFlag(FLAGS_history_limit);
   ImGui::PlotLines(label, &values.back(), std::min(limit, values.size()),
                    /*values_offset=*/0, /*overlay_text=*/nullptr,
                    /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
@@ -279,6 +282,7 @@ int main(int argc, char** argv) {
 
   struct StateCache last_state;
   absl::Time last_slow_update = absl::InfinitePast();
+  int history_window = absl::GetFlag(FLAGS_history_limit);
 
   // Main loop
   while (!glfwWindowShouldClose(window)) {
@@ -341,9 +345,6 @@ int main(int argc, char** argv) {
       ImGui::Text("Current avg obj value: %f", last_state.obj_value);
       ImGui::Text("Worst-case constraint infeas: %f", last_state.max_violation);
 
-      ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
-                  1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-
       const char* status;
       if (!done) {
         status = "iterating";
@@ -356,11 +357,9 @@ int main(int argc, char** argv) {
       }
 
       ImGui::Text("Status: %s.", status);
-
-      if (ImGui::Button("TestButton")) {
-        fprintf(stderr, "Test!\n");
-      }
-
+      ImGui::InputInt("Timespan", &history_window, 10);
+      ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+                  1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
       ImGui::End();
     }
 
@@ -402,11 +401,13 @@ int main(int argc, char** argv) {
             scale * absl::ToDoubleSeconds(last_state.scalar.knapsack_time),
             scale * absl::ToDoubleSeconds(last_state.scalar.observe_time),
             scale * absl::ToDoubleSeconds(last_state.scalar.update_time));
-        PlotHistoricValues("Iteration", last_state.iteration_times);
-        PlotHistoricValues("Prepare", last_state.prepare_times);
-        PlotHistoricValues("Knapsack", last_state.knapsack_times);
-        PlotHistoricValues("Observe", last_state.observe_times);
-        PlotHistoricValues("Update", last_state.update_times);
+        PlotHistoricValues("Iteration", last_state.iteration_times,
+                           history_window);
+        PlotHistoricValues("Prepare", last_state.prepare_times, history_window);
+        PlotHistoricValues("Knapsack", last_state.knapsack_times,
+                           history_window);
+        PlotHistoricValues("Observe", last_state.observe_times, history_window);
+        PlotHistoricValues("Update", last_state.update_times, history_window);
         ImGui::End();
       }
 
@@ -418,11 +419,16 @@ int main(int argc, char** argv) {
                     last_state.scalar.best_bound,
                     scale * last_state.scalar.sum_solution_value,
                     scale * last_state.scalar.sum_solution_feasibility);
-        PlotHistoricValues("Delta bound %", last_state.delta_best_bounds);
-        PlotHistoricValues("Best bound", last_state.best_bounds);
-        PlotHistoricValues("Best - avg %", last_state.best_bound_avg_gaps);
-        PlotHistoricValues("Avg sol value", last_state.avg_solution_values);
-        PlotHistoricValues("Avg sol feas", last_state.avg_solution_feasilities);
+        PlotHistoricValues("Delta bound %", last_state.delta_best_bounds,
+                           history_window);
+        PlotHistoricValues("Best bound", last_state.best_bounds,
+                           history_window);
+        PlotHistoricValues("Best - avg %", last_state.best_bound_avg_gaps,
+                           history_window);
+        PlotHistoricValues("Avg sol value", last_state.avg_solution_values,
+                           history_window);
+        PlotHistoricValues("Avg sol feas", last_state.avg_solution_feasilities,
+                           history_window);
       }
 
       {
@@ -435,11 +441,13 @@ int main(int argc, char** argv) {
                     scale * last_state.scalar.min_loss,
                     last_state.delta_max_gains.back(),
                     scale * last_state.scalar.max_loss);
-        PlotHistoricValues("mix gap", last_state.sum_mix_gaps);
-        PlotHistoricValues("delta mix gap %", last_state.delta_sum_mix_gaps);
-        PlotHistoricValues("max gain", last_state.max_gains);
-        PlotHistoricValues("delta max gain %", last_state.delta_max_gains);
-        PlotHistoricValues("max loss", last_state.max_losses);
+        PlotHistoricValues("mix gap", last_state.sum_mix_gaps, history_window);
+        PlotHistoricValues("delta mix gap %", last_state.delta_sum_mix_gaps,
+                           history_window);
+        PlotHistoricValues("max gain", last_state.max_gains, history_window);
+        PlotHistoricValues("delta max gain %", last_state.delta_max_gains,
+                           history_window);
+        PlotHistoricValues("max loss", last_state.max_losses, history_window);
         ImGui::End();
       }
     }
