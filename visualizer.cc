@@ -123,15 +123,9 @@ int setup(GLFWwindow** window_ptr) {
   return 0;
 }
 
-// Adds `observation` to the front of `out`, and truncates history if
-// necessary.
+// Pushes `observation` to the back of `out`: rendering reads backwards.
 void AddPoint(float observation, std::vector<float>* out) {
-  const size_t limit = absl::GetFlag(FLAGS_history_limit);
-
-  out->insert(out->begin(), observation);
-  if (out->size() > limit) {
-    out->resize(limit);
-  }
+  out->push_back(observation);
 }
 
 // Adds `observation` in milliseconds to the front of out, and
@@ -139,6 +133,24 @@ void AddPoint(float observation, std::vector<float>* out) {
 void AddTimeObservation(const absl::Duration observation,
                         std::vector<float>* out) {
   AddPoint(1000 * absl::ToDoubleSeconds(observation), out);
+}
+
+// Returns the relative difference between the last and second to
+// last observations in `values`, scaled down by `1 / num_iter`.
+//
+// That's roughly the rate of change for the values.
+//
+// Any value smaller in magnitude than `clamp_below` is clamped to 0.
+float LastDelta(absl::Span<const float> values, const size_t num_iter,
+                float clamp_below = 0.0) {
+  if (values.size() < 2) {
+    return 0.0;
+  }
+
+  const float last = values.back();
+  const float prev = values[values.size() - 2];
+  const float rel_delta = (last - prev) / (num_iter * (std::abs(prev) + 1e-6));
+  return (std::abs(rel_delta) < clamp_below) ? 0.0 : rel_delta;
 }
 
 void UpdateDerivedValues(const RandomSetCoverInstance& instance, bool slow,
@@ -189,14 +201,8 @@ void UpdateDerivedValues(const RandomSetCoverInstance& instance, bool slow,
 
 #define ADD_POINT(NAME, NAMES) AddPoint(cache->scalar.NAME, &cache->NAMES)
   ADD_POINT(sum_mix_gap, sum_mix_gaps);
-  if (cache->sum_mix_gaps.size() > 1) {
-    const double delta = (cache->sum_mix_gaps[0] - cache->sum_mix_gaps[1]) /
-                         cache->delta_num_iterations;
-    const double rel_delta = delta / (cache->sum_mix_gaps[1] + 1e-6);
-    AddPoint(100 * rel_delta, &cache->delta_sum_mix_gaps);
-  } else {
-    AddPoint(0.0, &cache->delta_sum_mix_gaps);
-  }
+  AddPoint(100 * LastDelta(cache->sum_mix_gaps, cache->delta_num_iterations),
+           &cache->delta_sum_mix_gaps);
 
   ADD_POINT(best_bound, best_bounds);
   ADD_POINT(last_solution_value, solution_values);
@@ -207,25 +213,11 @@ void UpdateDerivedValues(const RandomSetCoverInstance& instance, bool slow,
     AddPoint(-scale * cache->scalar.min_loss, &cache->max_gains);
     AddPoint(scale * cache->scalar.max_loss, &cache->max_losses);
 
-    if (cache->max_gains.size() > 1) {
-      // Newer value should be smaller.
-      const double delta = (cache->max_gains[1] - cache->max_gains[0]) /
-                           cache->delta_num_iterations;
-      const double rel_delta = delta / (std::abs(cache->max_gains[0]) + 1e-6);
-      AddPoint(100 * rel_delta, &cache->delta_max_gains);
-    } else {
-      AddPoint(0.0, &cache->delta_max_gains);
-    }
-  }
-
-  if (cache->best_bounds.size() >= 2) {
-    const double delta = (cache->best_bounds[0] - cache->best_bounds[1]) /
-                         cache->delta_num_iterations;
-    const double rel_delta = delta / (std::abs(cache->best_bounds[1]) + 1e-6);
-    AddPoint(100 * (rel_delta < 1e-6 ? 0 : rel_delta),
-             &cache->delta_best_bounds);
-  } else {
-    AddPoint(0, &cache->delta_best_bounds);
+    AddPoint(100 * LastDelta(cache->max_gains, cache->delta_num_iterations),
+             &cache->delta_max_gains);
+    AddPoint(
+        100 * LastDelta(cache->best_bounds, cache->delta_num_iterations, 1e-6),
+        &cache->delta_best_bounds);
   }
 
   const double avg_value =
@@ -241,11 +233,14 @@ void UpdateDerivedValues(const RandomSetCoverInstance& instance, bool slow,
       &cache->avg_solution_feasilities);
 }
 
-void PlotNarrowLines(const char* label, absl::Span<const float> values) {
-  ImGui::PlotLines(label, values.data(), values.size(),
+void PlotHistoricValues(const char* label, absl::Span<const float> values) {
+  constexpr int kStride = sizeof(float);
+
+  const size_t limit = absl::GetFlag(FLAGS_history_limit);
+  ImGui::PlotLines(label, &values.back(), std::min(limit, values.size()),
                    /*values_offset=*/0, /*overlay_text=*/nullptr,
                    /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
-                   /*graph_size=*/ImVec2(300, 25));
+                   /*graph_size=*/ImVec2(300, 25), -kStride);
 }
 }  // namespace
 
@@ -407,11 +402,11 @@ int main(int argc, char** argv) {
             scale * absl::ToDoubleSeconds(last_state.scalar.knapsack_time),
             scale * absl::ToDoubleSeconds(last_state.scalar.observe_time),
             scale * absl::ToDoubleSeconds(last_state.scalar.update_time));
-        PlotNarrowLines("Iteration", last_state.iteration_times);
-        PlotNarrowLines("Prepare", last_state.prepare_times);
-        PlotNarrowLines("Knapsack", last_state.knapsack_times);
-        PlotNarrowLines("Observe", last_state.observe_times);
-        PlotNarrowLines("Update", last_state.update_times);
+        PlotHistoricValues("Iteration", last_state.iteration_times);
+        PlotHistoricValues("Prepare", last_state.prepare_times);
+        PlotHistoricValues("Knapsack", last_state.knapsack_times);
+        PlotHistoricValues("Observe", last_state.observe_times);
+        PlotHistoricValues("Update", last_state.update_times);
         ImGui::End();
       }
 
@@ -423,11 +418,11 @@ int main(int argc, char** argv) {
                     last_state.scalar.best_bound,
                     scale * last_state.scalar.sum_solution_value,
                     scale * last_state.scalar.sum_solution_feasibility);
-        PlotNarrowLines("Delta bound %", last_state.delta_best_bounds);
-        PlotNarrowLines("Best bound", last_state.best_bounds);
-        PlotNarrowLines("Best - avg %", last_state.best_bound_avg_gaps);
-        PlotNarrowLines("Avg sol value", last_state.avg_solution_values);
-        PlotNarrowLines("Avg sol feas", last_state.avg_solution_feasilities);
+        PlotHistoricValues("Delta bound %", last_state.delta_best_bounds);
+        PlotHistoricValues("Best bound", last_state.best_bounds);
+        PlotHistoricValues("Best - avg %", last_state.best_bound_avg_gaps);
+        PlotHistoricValues("Avg sol value", last_state.avg_solution_values);
+        PlotHistoricValues("Avg sol feas", last_state.avg_solution_feasilities);
       }
 
       {
@@ -436,15 +431,15 @@ int main(int argc, char** argv) {
         const double scale = 1.0 / last_state.scalar.num_iterations;
         ImGui::Text("mix gap %.2f (%+.4f%%)\nloss min=%.4f (%+.4f%%) max=%.2f",
                     last_state.scalar.sum_mix_gap,
-                    last_state.delta_sum_mix_gaps.front(),
+                    last_state.delta_sum_mix_gaps.back(),
                     scale * last_state.scalar.min_loss,
-                    last_state.delta_max_gains.front(),
+                    last_state.delta_max_gains.back(),
                     scale * last_state.scalar.max_loss);
-        PlotNarrowLines("mix gap", last_state.sum_mix_gaps);
-        PlotNarrowLines("delta mix gap %", last_state.delta_sum_mix_gaps);
-        PlotNarrowLines("max gain", last_state.max_gains);
-        PlotNarrowLines("delta max gain %", last_state.delta_max_gains);
-        PlotNarrowLines("max loss", last_state.max_losses);
+        PlotHistoricValues("mix gap", last_state.sum_mix_gaps);
+        PlotHistoricValues("delta mix gap %", last_state.delta_sum_mix_gaps);
+        PlotHistoricValues("max gain", last_state.max_gains);
+        PlotHistoricValues("delta max gain %", last_state.delta_max_gains);
+        PlotHistoricValues("max loss", last_state.max_losses);
         ImGui::End();
       }
     }
