@@ -1,36 +1,35 @@
 # gl3w: generate the files, patch up <> -> "", then build libgl3w.
 
 config_setting(
-  name = "osx",
-  constraint_values = ["@bazel_tools//platforms:osx"],
+    name = "osx",
+    constraint_values = ["@bazel_tools//platforms:osx"],
 )
 
 cc_library(
-  name = "gl3w",
-  visibility = ["//visibility:public"],
-  hdrs = [
-    "GL/gl3w.h",
-    "GL/glcorearb.h",
-    "KHR/khrplatform.h",
-  ],
-  srcs = ["src/gl3w.c"],
+    name = "gl3w",
+    srcs = ["src/gl3w.c"],
+    hdrs = [
+        "GL/gl3w.h",
+        "GL/glcorearb.h",
+        "KHR/khrplatform.h",
+    ],
+    visibility = ["//visibility:public"],
 )
 
 genrule(
-  name = "gl3w_gen",
-  visibility = ["//visibility:private"],
-  srcs = [],
-  outs = [
-    "include/GL/gl3w.h",
-    "include/GL/glcorearb.h",
-    "include/KHR/khrplatform.h",
-    "GL/gl3w.h",
-    "GL/glcorearb.h",
-    "KHR/khrplatform.h",
-    "src/gl3w.c",
-  ],
-  cmd = select({
-    ":osx": """
+    name = "gl3w_gen",
+    srcs = [],
+    outs = [
+        "include/GL/gl3w.h",
+        "include/GL/glcorearb.h",
+        "include/KHR/khrplatform.h",
+        "GL/gl3w.h",
+        "GL/glcorearb.h",
+        "KHR/khrplatform.h",
+        "src/gl3w.c",
+    ],
+    cmd = select({
+        ":osx": """
 external/gl3w/gl3w_gen.py --root $(RULEDIR);
 sed -e 's|<GL/glcorearb.h>|"GL/glcorearb.h"|' -i bak $(location include/GL/gl3w.h);
 sed -e 's|<KHR/khrplatform.h>|"KHR/khrplatform.h"|' -i bak $(location include/GL/glcorearb.h);
@@ -38,7 +37,7 @@ sed -e 's|<GL/gl3w.h>|"GL/gl3w.h"|' -i bak $(location src/gl3w.c);
 cp -r $(RULEDIR)/include/GL $(RULEDIR);
 cp -r $(RULEDIR)/include/KHR $(RULEDIR);
 """,
-    "//conditions:default": """
+        "//conditions:default": """
 external/gl3w/gl3w_gen.py --root $(RULEDIR);
 sed -e 's|<GL/glcorearb.h>|"GL/glcorearb.h"|' -i $(location include/GL/gl3w.h);
 sed -e 's|<KHR/khrplatform.h>|"KHR/khrplatform.h"|' -i $(location include/GL/glcorearb.h);
@@ -46,9 +45,9 @@ sed -e 's|<GL/gl3w.h>|"GL/gl3w.h"|' -i $(location src/gl3w.c);
 cp -r $(RULEDIR)/include/GL $(RULEDIR);
 cp -r $(RULEDIR)/include/KHR $(RULEDIR);
 """,
-  }),
-  local=True,
-  message="Generating gl3w headers",
-  output_to_bindir=False,
+    }),
+    local = True,
+    message = "Generating gl3w headers",
+    output_to_bindir = False,
+    visibility = ["//visibility:private"],
 )
-
