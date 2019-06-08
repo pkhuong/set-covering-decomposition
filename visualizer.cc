@@ -26,6 +26,9 @@ ABSL_FLAG(size_t, history_limit, 100,
 ABSL_FLAG(double, refresh_period_ms, 250,
           "Minimum time in milliseconds between slow data refreshes.");
 
+ABSL_FLAG(size_t, window_width, 1280, "Width of the viewport in pixels");
+ABSL_FLAG(size_t, window_height, 720, "Height of the viewport in pixels");
+
 namespace {
 struct StateCache {
   std::vector<double> solution;
@@ -64,7 +67,7 @@ void glfw_error_callback(int error, const char* description) {
   fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
-int setup(GLFWwindow** window_ptr) {
+int setup(size_t width, size_t height, GLFWwindow** window_ptr) {
   *window_ptr = nullptr;
   // Setup window
   glfwSetErrorCallback(glfw_error_callback);
@@ -89,7 +92,7 @@ int setup(GLFWwindow** window_ptr) {
 
   // Create window with graphics context
   GLFWwindow* window = glfwCreateWindow(
-      1280, 720, "Surrogate decomposition visualizer", nullptr, nullptr);
+      width, height, "Surrogate decomposition visualizer", nullptr, nullptr);
   *window_ptr = window;
   if (window == nullptr) return 1;
   glfwMakeContextCurrent(window);
@@ -250,6 +253,8 @@ void PlotHistoricValues(const char* label, absl::Span<const float> values,
 int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
 
+  const size_t kWinWidth = absl::GetFlag(FLAGS_window_width);
+  const size_t kWinHeight = absl::GetFlag(FLAGS_window_height);
   const double kFeasEps = absl::GetFlag(FLAGS_feas_eps);
 
   RandomSetCoverInstance instance = GenerateRandomInstance(
@@ -259,7 +264,7 @@ int main(int argc, char** argv) {
 
   GLFWwindow* window;
   {
-    int r = setup(&window);
+    int r = setup(kWinWidth, kWinHeight, &window);
     if (r != 0) {
       return 0;
     }
