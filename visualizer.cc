@@ -344,6 +344,9 @@ int main(int argc, char** argv) {
     ImGui::NewFrame();
 
     {
+      // Top left
+      ImGui::SetNextWindowPos(ImVec2(0.005 * kWinWidth, 0.005 * kWinHeight),
+                              ImGuiCond_FirstUseEver, ImVec2(0, 0));
       ImGui::Begin("Summary");
 
       ImGui::Text("Iteration #%zu", last_state.scalar.num_iterations);
@@ -370,32 +373,9 @@ int main(int argc, char** argv) {
 
     if (last_state.scalar.num_iterations > 0) {
       {
-        ImGui::Begin("Decision variable values");
-        ImGui::Text("Decisions (0: %.2f%%)",
-                    100 * last_state.solution_bins.front());
-        ImGui::PlotHistogram("", last_state.non_zero_solution_bins.data(),
-                             last_state.non_zero_solution_bins.size(),
-                             /*values_offset=*/0, /*overlay_text=*/nullptr,
-                             /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
-                             /*graph_size=*/ImVec2(400, 300));
-        ImGui::End();
-      }
-
-      {
-        ImGui::Begin("Constraints");
-        ImGui::Text(
-            "Violation (<= eps: %.2f%%)",
-            100 * (last_state.infeas_bins.front() + last_state.infeas_bins[1]));
-        ImGui::PlotHistogram("", last_state.infeas_bins.data(),
-                             last_state.infeas_bins.size(),
-                             /*values_offset=*/0, /*overlay_text=*/nullptr,
-                             /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
-                             /*graph_size=*/ImVec2(400, 300));
-
-        ImGui::End();
-      }
-
-      {
+        // Top right
+        ImGui::SetNextWindowPos(ImVec2(0.995 * kWinWidth, 0.005 * kWinHeight),
+                                ImGuiCond_FirstUseEver, ImVec2(1, 0));
         ImGui::Begin("Timings");
 
         const double scale = 1000.0 / last_state.scalar.num_iterations;
@@ -417,6 +397,9 @@ int main(int argc, char** argv) {
       }
 
       {
+        // Middle, top.
+        ImGui::SetNextWindowPos(ImVec2(0.5 * kWinWidth, 0.005 * kWinHeight),
+                                ImGuiCond_FirstUseEver, ImVec2(0.5, 0));
         ImGui::Begin("Primal");
 
         const double scale = 1.0 / last_state.scalar.num_iterations;
@@ -434,9 +417,14 @@ int main(int argc, char** argv) {
                            history_window);
         PlotHistoricValues("Avg sol feas", last_state.avg_solution_feasilities,
                            history_window);
+        ImGui::End();
       }
 
       {
+        // Middle, just below (hardcoded height).
+        ImGui::SetNextWindowPos(
+            ImVec2(0.5 * kWinWidth, 0.005 * kWinHeight + 195),
+            ImGuiCond_FirstUseEver, ImVec2(0.5, 0));
         ImGui::Begin("Dual");
 
         const double scale = 1.0 / last_state.scalar.num_iterations;
@@ -453,6 +441,38 @@ int main(int argc, char** argv) {
         PlotHistoricValues("delta max gain %", last_state.delta_max_gains,
                            history_window);
         PlotHistoricValues("max loss", last_state.max_losses, history_window);
+        ImGui::End();
+      }
+
+      {
+        // Bottom left
+        ImGui::SetNextWindowPos(ImVec2(0.005 * kWinWidth, 0.995 * kWinHeight),
+                                ImGuiCond_FirstUseEver, ImVec2(0, 1));
+        ImGui::Begin("Decision variable values");
+        ImGui::Text("Decisions (0: %.2f%%)",
+                    100 * last_state.solution_bins.front());
+        ImGui::PlotHistogram("##var", last_state.non_zero_solution_bins.data(),
+                             last_state.non_zero_solution_bins.size(),
+                             /*values_offset=*/0, /*overlay_text=*/nullptr,
+                             /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
+                             /*graph_size=*/ImVec2(400, 300));
+        ImGui::End();
+      }
+
+      {
+        // Bottom right
+        ImGui::SetNextWindowPos(ImVec2(0.995 * kWinWidth, 0.995 * kWinHeight),
+                                ImGuiCond_FirstUseEver, ImVec2(1, 1));
+        ImGui::Begin("Constraints");
+        ImGui::Text(
+            "Violation (<= eps: %.2f%%)",
+            100 * (last_state.infeas_bins.front() + last_state.infeas_bins[1]));
+        ImGui::PlotHistogram("##con", last_state.infeas_bins.data(),
+                             last_state.infeas_bins.size(),
+                             /*values_offset=*/0, /*overlay_text=*/nullptr,
+                             /*scale_min=*/0.0, /*scale_max=*/FLT_MAX,
+                             /*graph_size=*/ImVec2(400, 300));
+
         ImGui::End();
       }
     }
