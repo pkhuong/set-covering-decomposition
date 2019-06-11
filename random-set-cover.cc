@@ -26,7 +26,8 @@ int main(int argc, char** argv) {
                         absl::MakeSpan(instance.constraints));
 
   solver.Drive(absl::GetFlag(FLAGS_max_iter), kFeasEps,
-               absl::GetFlag(FLAGS_check_feasible));
+               absl::GetFlag(FLAGS_check_feasible),
+               /*populate_solution_concurrently=*/false);
 
   absl::MutexLock ml(&solver.state().mu);
   absl::Span<const double> solution(solver.state().current_solution);

@@ -66,11 +66,14 @@ class SetCoverSolver {
   // `max_iter` iterations have elapsed, whichever happens first.
   // Signals `done_` before returning.
   //
-  // Updates the `state()` after each iteration.
+  // Updates the `state()` after each iteration. The `state()`'s
+  // `current_solution` vector is only populated at the last
+  // iteration, or `populate_solution_concurrently` is true.
   //
   // If `check_feasible` is true, also returns early whenever a
   // subproblem yields a solution that's both feasible and optimal.
-  void Drive(size_t max_iter, double eps, bool check_feasible = false);
+  void Drive(size_t max_iter, double eps, bool check_feasible,
+             bool populate_solution_concurrently = true);
 
  private:
   SolverState state_;

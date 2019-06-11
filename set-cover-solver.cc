@@ -8,7 +8,8 @@ SetCoverSolver::SetCoverSolver(absl::Span<const double> obj_values,
                                absl::Span<CoverConstraint> constraints)
     : driver_(obj_values), obj_values_(obj_values), constraints_(constraints) {}
 
-void SetCoverSolver::Drive(size_t max_iter, double eps, bool check_feasible) {
+void SetCoverSolver::Drive(size_t max_iter, double eps, bool check_feasible,
+                           bool populate_solution_concurrently) {
   for (size_t i = 0; i < max_iter; ++i) {
     DriveOneIteration(constraints_, &driver_);
 
@@ -18,8 +19,12 @@ void SetCoverSolver::Drive(size_t max_iter, double eps, bool check_feasible) {
         check_feasible && driver_.max_last_solution_infeasibility < eps &&
         driver_.last_solution_value <= driver_.best_bound + eps;
 
+    const bool last_iteration =
+        done || infeasible || relaxation_optimal || (i + 1) >= max_iter;
+
     std::vector<double> current_solution;
-    {
+    if (last_iteration || populate_solution_concurrently) {
+      // XXX: vectorize.
       current_solution.reserve(driver_.sum_solutions.size());
       double scale = 1.0 / driver_.num_iterations;
       for (const double unscaled : driver_.sum_solutions) {
@@ -60,8 +65,7 @@ void SetCoverSolver::Drive(size_t max_iter, double eps, bool check_feasible) {
       state_.mu.Unlock();
     }
 
-    if (i < 10 || ((i + 1) % 100) == 0 || done || infeasible ||
-        relaxation_optimal) {
+    if (i < 10 || ((i + 1) % 100) == 0 || last_iteration) {
       const size_t num_it = i + 1;
       std::cout << "It " << num_it << ":"
                 << " mix gap=" << driver_.sum_mix_gap << " max avg viol="
