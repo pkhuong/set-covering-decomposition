@@ -1,5 +1,6 @@
 #include "big-vec.h"
 
+#include <string.h>
 #include <sys/mman.h>
 
 #include <cstdio>
@@ -96,7 +97,8 @@ void *BigVecArena::AcquireRoundedBytes(size_t exact_size, int flags) {
 #endif
 #endif
 
-std::pair<void *, size_t> BigVecArena::AcquireBytes(size_t min_size) {
+std::pair<void *, size_t> BigVecArena::AcquireBytes(size_t min_size,
+                                                    bool zero_fill) {
   const auto round = [min_size](size_t page) {
     return page * ((min_size + page - 1) / page);
   };
@@ -108,7 +110,7 @@ std::pair<void *, size_t> BigVecArena::AcquireBytes(size_t min_size) {
 
   // First, check the cache.
   {
-    absl::MutexLock ml(&mu_);
+    absl::ReleasableMutexLock ml(&mu_);
 
     absl::InlinedVector<size_t, 3> sizes;
     if (min_size >= kOneGb) {
@@ -125,6 +127,11 @@ std::pair<void *, size_t> BigVecArena::AcquireBytes(size_t min_size) {
       if (!list.empty()) {
         void *ret = list.back();
         list.pop_back();
+
+        ml.Release();
+        if (zero_fill) {
+          memset(ret, 0, min_size);
+        }
         return std::make_pair(ret, exact_size);
       }
     }

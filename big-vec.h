@@ -99,33 +99,37 @@ class BigVecArena {
 
   template <typename T>
   BigVec<T> Create(size_t count, const T& init = T()) {
-    void* data;
+    T* data;
     size_t byte_size;
-    if (count == 0) {
-      data = EmptyAlloc<T>();
-      byte_size = 0;
-    } else {
-      std::tie(data, byte_size) = AcquireBytes(sizeof(T) * count);
-    }
-    return BigVec<T>(static_cast<T*>(data), byte_size, count, this, init);
+    std::tie(data, byte_size) = CreateInternal<T>(count);
+    return BigVec<T>(data, byte_size, count, this, init);
   }
 
   template <typename T>
-  BigVec<T> CreateUninit(size_t count) {
-    void* data;
+  BigVec<T> CreateUninit(size_t count, bool zero_fill = false) {
+    T* data;
     size_t byte_size;
-    if (count == 0) {
-      data = EmptyAlloc<T>();
-      byte_size = 0;
-    } else {
-      std::tie(data, byte_size) = AcquireBytes(sizeof(T) * count);
-    }
-    return BigVec<T>(static_cast<T*>(data), byte_size, count, this);
+    std::tie(data, byte_size) = CreateInternal<T>(count, zero_fill);
+    return BigVec<T>(data, byte_size, count, this);
   }
 
   void Recycle(void* data, size_t byte_size);
 
  private:
+  template <typename T>
+  std::pair<T*, size_t> CreateInternal(size_t count, bool zero_fill = false) {
+    void* data;
+    size_t byte_size;
+    if (count == 0) {
+      data = EmptyAlloc<T>();
+      byte_size = 0;
+    } else {
+      std::tie(data, byte_size) = AcquireBytes(sizeof(T) * count, zero_fill);
+    }
+
+    return std::make_pair(static_cast<T*>(data), byte_size);
+  }
+
   template <typename T>
   static void* EmptyAlloc();
 
@@ -134,7 +138,7 @@ class BigVecArena {
   void* AcquireRoundedBytes(size_t exact_size, int flags);
 
   // Returns an allocation for at least `min_size` bytes.
-  std::pair<void*, size_t> AcquireBytes(size_t min_size);
+  std::pair<void*, size_t> AcquireBytes(size_t min_size, bool zero_fill);
 
   absl::Mutex mu_;
   absl::flat_hash_map<size_t, std::vector<void*>> cache_ GUARDED_BY(mu_);
