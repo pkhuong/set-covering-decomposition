@@ -42,8 +42,10 @@ PrepareWeightsState PrepareAllWeights(absl::Span<CoverConstraint> constraints,
           state->sum_mix_gap;
   }
 
-  PrepareWeightsState ret(state->arena.Create<double>(state->obj_values.size()),
-                          state->prev_min_loss, eta);
+  PrepareWeightsState ret(
+      state->arena.CreateUninit<double>(state->obj_values.size(),
+                                        /*zero_fill=*/true),
+      state->prev_min_loss, eta);
   for (auto& constraint : constraints) {
     constraint.PrepareWeights(&ret);
   }
@@ -136,7 +138,8 @@ UpdateMixLossState UpdateAllMixLosses(
 DriverState::DriverState(absl::Span<const double> obj_values_in)
     : obj_values(obj_values_in),
       best_bound(LowerBoundObjectiveValue(obj_values)) {
-  sum_solutions = arena.Create<double>(obj_values.size(), 0.0);
+  sum_solutions =
+      arena.CreateUninit<double>(obj_values.size(), /*zero_fill=*/true);
 }
 
 void DriveOneIteration(absl::Span<CoverConstraint> constraints,
