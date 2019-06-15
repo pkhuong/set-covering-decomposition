@@ -6,3 +6,4 @@ compile_commands\.json
 coverage
 imgui\.ini
 perf\.data*
+kythe_out
