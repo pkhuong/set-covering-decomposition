@@ -53,3 +53,10 @@ http_archive(
     strip_prefix = "imgui-eb7849b477ff96d8d0cc9f2f4a304b5fc0f3ac1a",
     urls = ["https://github.com/ocornut/imgui/archive/eb7849b477ff96d8d0cc9f2f4a304b5fc0f3ac1a.zip"],  # 2019-05-30
 )
+
+http_archive(
+    name = "bazel-compilation-database",
+    sha256 = "9c7f1f4060c6c0ccfa0e7c2b8cd9c774b232c1b762386bfc063e7c4919be0458",
+    strip_prefix = "bazel-compilation-database-d5a0ee259aa356886618eafae17ca05ebf79d6c2",
+    urls = ["https://github.com/grailbio/bazel-compilation-database/archive/d5a0ee259aa356886618eafae17ca05ebf79d6c2.zip"],  # 2019-06-07
+)

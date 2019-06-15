@@ -20,6 +20,16 @@ alias(
     actual = "@com_github_bazelbuild_buildtools//buildifier:buildifier",
 )
 
+load("@bazel-compilation-database//:aspects.bzl", "compilation_database")
+
+compilation_database(
+    name = "compile_commands",
+    targets = [
+        ":random-set-cover",
+        ":visualizer",
+    ],
+)
+
 cc_binary(
     name = "random-set-cover",
     srcs = ["random-set-cover.cc"],
