@@ -1,0 +1,8 @@
+*~
+\.*
+\#.*
+bazel-*
+compile_commands\.json
+coverage
+imgui\.ini
+perf\.data*
