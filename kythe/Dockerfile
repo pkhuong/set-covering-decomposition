@@ -8,6 +8,7 @@ RUN tar xzf kythe-v0.0.30.tar.gz && mv kythe-v0.0.30 /opt/kythe
 
 FROM debian:buster-slim
 RUN apt-get update && \
-    apt-get install -y libncurses5 parallel &&  \
+    apt-get install -y libncurses5 parallel unzip zip &&  \
     ((echo "will cite" | parallel --citation > /dev/null 2>&1) || true)
 COPY --from=build /opt/kythe /opt/kythe/
+COPY index-kzip.sh /index-kzip.sh

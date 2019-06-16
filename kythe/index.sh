@@ -57,8 +57,7 @@ echo "Indexing extracted kzip from the build scan."
 docker run --rm \
        -v "$BASE/kythe_out/scan:/compilations" \
        -v "$BASE/kythe_out/index:/index" \
-       $BUILT sh -c \
-       "find compilations -name '*\.kzip' -print0 | parallel -0 -L 1 /opt/kythe/indexers/cxx_indexer | /opt/kythe/tools/dedup_stream > index/graphstore"
+       $BUILT /index-kzip.sh
 
 # Convert graphstore to serving table.
 # XXX: disabled experimental pipeline because the experimental stuff is less robust against errors (:
