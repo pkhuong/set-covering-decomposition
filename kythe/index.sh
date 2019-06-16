@@ -16,10 +16,16 @@ SCAN=$(docker build -q -t kythe-scan "$KYTHE" -f "$KYTHE/scan.Dockerfile")
 mkdir -p "$BASE/kythe_out/scan"
 mkdir -p "$BASE/kythe_out/cache"
 mkdir -p "$BASE/kythe_out/index"
-find "$BASE/kythe_out/scan/" -name "*.kzip" -delete;
+
+echo "Overriding permissions in ${BASE}/kythe_out."
+RESTORE=$(docker build -q -t kythe-permissions "$KYTHE" -f "$KYTHE/fix_permissions.Dockerfile")
+docker run --rm \
+       -v "$BASE/kythe_out:/out" \
+       $RESTORE /out
 
 echo "Extracting xref information from the bazel build."
 echo "This may fail with network errors. Retry a couple times until the cache is populated."
+find "$BASE/kythe_out/scan/" -name "*.kzip" -delete;
 docker run --rm \
        -v "$BASE:/workspace/code" \
        -v "$BASE/kythe_out/scan:/workspace/output" \
@@ -65,7 +71,6 @@ docker run --rm \
        --out "/index/serving_table"
 
 echo "Restoring permissions in ${BASE}/kythe_out."
-RESTORE=$(docker build -q -t kythe-permissions "$KYTHE" -f "$KYTHE/fix_permissions.Dockerfile")
 docker run --rm \
        -v "$BASE/kythe_out:/out" \
        $RESTORE /out
