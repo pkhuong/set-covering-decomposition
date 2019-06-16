@@ -36,7 +36,7 @@ docker run --rm \
        $SCAN build \
        --define kythe_corpus=set-covering-decomposition \
        --define gui=yes \
-       //...
+       -- //... -//:buildifier
 
 # See https://github.com/kythe/kythe/blob/master/kythe/examples/bazel/kythe-index.sh
 
