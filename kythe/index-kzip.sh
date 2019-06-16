@@ -47,7 +47,10 @@ popd
 
 # Probably makes sense to parallelise the previous step and merge it
 # with this last analysis step.
+#
+# The sigsegv seem to be non-deterministic, so retry failures up to 2
+# more times.
 echo "Indexing kzips."
 find /tmp/split_kzip -name '*\.kzip' -print0 | \
-    parallel -0 -L 1 /opt/kythe/indexers/cxx_indexer | \
+    parallel -0 -L 1 --retries 2 /opt/kythe/indexers/cxx_indexer | \
     /opt/kythe/tools/dedup_stream > /index/graphstore;
