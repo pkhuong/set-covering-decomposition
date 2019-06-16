@@ -63,20 +63,20 @@ void AdvanceState(const State params, State* state) {
 
 // Advances `state` by 2^192 calls to `operator()()`.
 void AdvanceGlobalState(State* state) {
-  static const State long_jump_params = {
+  static const State long_jump_params = {{
       0x76e15d3efefdcbbf, 0xc5004e441c522fb3, 0x77710069854ee241,
       0x39109bb02acbe635,
-  };
+  }};
 
   AdvanceState(long_jump_params, state);
 }
 
 // Advance `state` by 2^128 calls to `operator()()`.
 void AdvanceLocalState(State* state) {
-  static const State jump_params = {
+  static const State jump_params = {{
       0x180ec6d33cfd0aba, 0xd5a61266f0c9392c, 0xa9582618e03fc9aa,
       0x39abdc4529b1661c,
-  };
+  }};
 
   AdvanceState(jump_params, state);
 }
