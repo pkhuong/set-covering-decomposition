@@ -15,7 +15,7 @@ The goals are:
    on multicore CPUs, GPUs, and perhaps in distributed solvers.
 2. Explore low-level numerical efficiency issues in
    [AdaHedge](https://arxiv.org/abs/1301.0534) and
-   [NormalHedge](https://arxiv.org/abs/1502.05934)
+   [NormalHedge](https://arxiv.org/abs/1502.05934).
 3. Figure out how to solve linear knapsacks quickly on contemporary
    architectures.
 
@@ -37,7 +37,7 @@ decomposition approach.  `bazel run -c opt :random-set-cover --
 `-max_set_per_value` controls density and `-num_sets` / `-num_values`
 control the size of the instance.
 
-When running on a machine that has libglfw3 and its development
+When running on a machine that has `libglfw3` and its development
 headers, `bazel run --define gui=yes -c opt :visualizer` generates and
 solves random instances exactly like `:random-set-cover`, but also
 displays statistics about the solution process in a GUI.
@@ -76,10 +76,10 @@ Some IDEs, like [Visual Studio Code](https://code.visualstudio.com/)
 the project given its bazel WORKSPACE.  If you're using VS Code, the
 Bazel plugin `bazelbuild.vscode-bazel` may also be of interest.
 
-Less clever system may need a compilation database.
+Less clever environments may need a compilation database.
 `generate-compile-commmands.sh` will generate one in the default
 location, `compile_commands.json` at the toplevel of the project.  Any
-clang-based tooling can be pointed at it, e.g.,
+clang-based tool can be pointed at it, e.g.,
 [YouCompleteMe](https://github.com/Valloric/YouCompleteMe) or
 [ccls](https://github.com/MaskRay/emacs-ccls).
 
@@ -102,5 +102,5 @@ error when `kythe/index.sh` runs `bazel build` internally.
 Re-executing `kythe/index.sh` a minute later usually fixes it (later
 invocation will be able to use the cache in `kythe_out`).
 
-For everything else, there's `kythe/cleanup.sh`, which deletes
-everything in `kythe_out` and should yield a clean slate.
+For everything else, there's `kythe/cleanup.sh`, which clears out
+`kythe_out` and should yield a clean slate.
