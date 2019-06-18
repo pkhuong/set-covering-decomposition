@@ -95,7 +95,7 @@ We can further smoosh the constraints in `w_a` and `w_d`:
         (w_a+ - w_a- + w_d+ - w_d-) x ≤ (w_a+ - w_a-)x_a  +(w_a+ - w_a-)x_d (*)
         A x_a ≤ b
         D x_d ≤ e
-    x ∈ X, x_a ∈ X_a ⊇ X, x_b ∈ X_b ⊇ X,
+     x ∈ X, x_a ∈ X_a ⊇ X, x_b ∈ X_b ⊇ X,
 
 and finally we have a way out.  For any fixed `x_a` and `x_d`, the
 remaining subproblem in `x` is a pure knapsack problem, and is
@@ -112,7 +112,14 @@ We can do so independently for `x_a` and `x_d`:
         D x_d ≤ e
      x_d ∈ X_d,
 
-and solve the knapsack at the end.
+and solve the knapsack
+
+        min c'x
+    s.t.
+        (w_a+ - w_a- + w_d+ - w_d-) x ≤ (w_a+ - w_a-)x_a  +(w_a+ - w_a-)x_d (*)
+     x ∈ X
+
+once we have values for `x_a` and `x_d`.
 
 I find this less direct reformulation interesting for multiple
 reasons.  First, Guignard already proved that it's stronger than a
