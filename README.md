@@ -104,3 +104,38 @@ invocation will be able to use the cache in `kythe_out`).
 
 For everything else, there's `kythe/cleanup.sh`, which clears out
 `kythe_out` and should yield a clean slate.
+
+Areas to explore
+----------------
+
+Here's what I think we can learn from this experiment (in addition to
+checking whether the [APPROACH.md](APPROACH.md) works).
+
+[STRUCTURE.md](STRUCTURE.md): I'm sure there's a better way to
+structure the overall data representation, as well as the outer loop
+itself.  We'd like something that's amenable to vectorisation, but
+also to pipelining/tiling.  An ideal solution would do well on
+multithreaded SIMD code, as well as on GPU.  How to structure the work
+to run most of the iteration on the GPU, except for the "opaque"
+constraint-specific subproblems, is another question I'd like to see
+answered.  Also, can we find a structure that makes it easy to swap in
+NormalHedge instead of AdaHedge?
+
+[EVAL.md](EVAL.md): Important preliminary work: how should we evaluate
+proposed changes?
+
+[VECPAR.md](VECPAR.md) There's the low risk / medium reward work of
+doing the same thing faster.  What can we vectorise? How should we
+parallelise it all?
+
+There's some higher risk around implementing the same idea
+differently: how can we make quickselect
+([QUICKSELECT.md](QUICKSELECT.md)) and our approximation of `exp`
+([EXP.md](EXP.md)) faster?  At what point does low precision impact
+convergence?
+
+Higher risk and higher reward would be to use what we know about the
+outer loop to find specialised improvements.  We know the arguments to
+`exp` tend to change very slowly ([EXP.md](EXP.md)), and similarly for
+the knapsack weights ([QUICKSELECT.md](QUICKSELECT.md)).  Can we
+recycle some work across iterations?
