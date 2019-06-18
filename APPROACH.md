@@ -17,7 +17,7 @@ A surrogate relaxation approach takes a formulation of the form
     s.t.
         A x ≤ b
         D x ≤ e
-    x ∈ X
+     x ∈ X
 
 and turns it into the "simpler"
 
@@ -25,7 +25,7 @@ and turns it into the "simpler"
     s.t.
         wA x ≤ wb
          D x ≤ e
-    x ∈ X,
+     x ∈ X,
 
 where `w` is a vector weights.
 
@@ -49,7 +49,7 @@ formulation
     s.t.
         A x ≤ b
         D x ≤ e
-    x ∈ X
+     x ∈ X
 
 then add artificial clones of the decision variables `x`,
 
@@ -61,9 +61,9 @@ then add artificial clones of the decision variables `x`,
         D x_d ≤ e
           x_d ≤ x  (*)
           x_d ≥ x  (*)
-      x ∈ X,
-    x_a ∈ X_a ⊇ X,
-    x_b ∈ X_b ⊇ X.
+       x ∈ X,
+     x_a ∈ X_a ⊇ X,
+     x_b ∈ X_b ⊇ X.
 
 The pair of `≥` and `≤` constraints give us equality, so this is
 clearly equivalent to the initial formulation, and no easier to solve.
@@ -73,15 +73,15 @@ becomes
 
         min c'x
     s.t.
-        A x_a ≤ b
+          A x_a ≤ b
         x_a - x ≤ 0  (w_a-)
         x - x_a ≤ 0  (w_a+)
-        D x_d ≤ e
+          D x_d ≤ e
         x_d - x ≤ 0  (w_d-)
         x - x_d ≤ 0  (w_d+)
-      x ∈ X,
-    x_a ∈ X_a ⊇ X,
-    x_b ∈ X_b ⊇ X,
+       x ∈ X,
+     x_a ∈ X_a ⊇ X,
+     x_b ∈ X_b ⊇ X,
 
 where the new linking constraints are now tagged with the
 corresponding vector of weights.  We can smoosh the relaxed
@@ -105,12 +105,12 @@ We can do so independently for `x_a` and `x_d`:
         max (w_a+ - w_a-)x_a
     s.t.
         A x_a ≤ b
-    x_a ∈ X_a,
+     x_a ∈ X_a,
 
         max (w_d+ - w_d-)x_d
     s.t.
         D x_d ≤ e
-    x_d ∈ X_d,
+     x_d ∈ X_d,
 
 and solve the knapsack at the end.
 
@@ -140,7 +140,7 @@ Rather than solving (a fractional relaxation of)
     s.t.
         A x ≤ b
         D x ≤ e
-    x ∈ X,
+     x ∈ X,
 
 we can solve the more general
 
@@ -148,15 +148,14 @@ we can solve the more general
     s.t.
         x ∈ F_A
         x ∈ F_B
-    x ∈ X,
+     x ∈ X,
 
 where `F_A` and `F_B` are arbitrary feasible sets for which we have
 linear optimisation oracles that can solve
 
         min c'x
     s.t.
-        x ∈ F_A
-    x ∈ X
+     x ∈ F_A ∩ X
 
 The set covering solver in this repository implements an extreme form
 of surrogate decomposition where each value to cover (each linear
