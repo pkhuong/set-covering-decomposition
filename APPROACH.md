@@ -15,17 +15,17 @@ A surrogate relaxation approach takes a formulation of the form
 
         min c'x
     s.t.
-        A x <= b
-        D x <= e
-         x \in X
+        A x ≤ b
+        D x ≤ e
+    x ∈ X
 
 and turns it into the "simpler"
 
         min c'x
     s.t.
-        wA x <= wb
-         D x <= e
-          x \in X,
+        wA x ≤ wb
+         D x ≤ e
+    x ∈ X,
 
 where `w` is a vector weights.
 
@@ -47,41 +47,41 @@ formulation
 
         min c'x
     s.t.
-        A x <= b
-        D x <= e
-         x \in X
+        A x ≤ b
+        D x ≤ e
+    x ∈ X
 
 then add artificial clones of the decision variables `x`,
 
         min c'x
     s.t.
-        A x_a <= b
-          x_a <= x  (*)
-          x_a >= x  (*)
-        D x_d <= e
-          x_d <= x  (*)
-          x_d >= x  (*)
-         x \in X,
-       x_a \in X_a \supseteq X,
-       x_b \in X_b \supseteq X.
+        A x_a ≤ b
+          x_a ≤ x  (*)
+          x_a ≥ x  (*)
+        D x_d ≤ e
+          x_d ≤ x  (*)
+          x_d ≥ x  (*)
+      x ∈ X,
+    x_a ∈ X_a ⊇ X,
+    x_b ∈ X_b ⊇ X.
 
-The pair of `>=` and `<=` constraints give us equality, so this is
+The pair of `≥` and `≤` constraints give us equality, so this is
 clearly equivalent to the initial formulation, and no easier to solve.
 The trick is to the relax the linking constraints marked with an
-asterisk.  The formulation (after flipping the `>=` constraints)
+asterisk.  The formulation (after flipping the `≥` constraints)
 becomes
 
         min c'x
     s.t.
-        A x_a <= b
-        x_a - x <= 0  (w_a-)
-        x - x_a <= 0  (w_a+)
-        D x_d <= e
-        x_d - x <= 0  (w_d-)
-        x - x_d <= 0  (w_d+)
-         x \in X,
-       x_a \in X_a \supseteq X,
-       x_b \in X_b \supseteq X,
+        A x_a ≤ b
+        x_a - x ≤ 0  (w_a-)
+        x - x_a ≤ 0  (w_a+)
+        D x_d ≤ e
+        x_d - x ≤ 0  (w_d-)
+        x - x_d ≤ 0  (w_d+)
+      x ∈ X,
+    x_a ∈ X_a ⊇ X,
+    x_b ∈ X_b ⊇ X,
 
 where the new linking constraints are now tagged with the
 corresponding vector of weights.  We can smoosh the relaxed
@@ -92,10 +92,10 @@ We can further smoosh the constraints in `w_a` and `w_d`:
 
         min c'x
     s.t.
-        (w_a+ - w_a- + w_d+ - w_d-) x <= (w_a+ - w_a-)x_a  +(w_a+ - w_a-)x_d (*)
-        A x_a <= b
-        D x_d <= e
-        x \in X, x_a \in X_a \supseteq X, x_b \in X_b \supseteq X,
+        (w_a+ - w_a- + w_d+ - w_d-) x ≤ (w_a+ - w_a-)x_a  +(w_a+ - w_a-)x_d (*)
+        A x_a ≤ b
+        D x_d ≤ e
+    x ∈ X, x_a ∈ X_a ⊇ X, x_b ∈ X_b ⊇ X,
 
 and finally we have a way out.  For any fixed `x_a` and `x_d`, the
 remaining subproblem in `x` is a pure knapsack problem, and is
@@ -104,13 +104,13 @@ We can do so independently for `x_a` and `x_d`:
 
         max (w_a+ - w_a-)x_a
     s.t.
-        A x_a <= b
-         x_a \in X_a,
+        A x_a ≤ b
+    x_a ∈ X_a,
 
         max (w_d+ - w_d-)x_d
     s.t.
-        D x_d <= e
-         x_d \in X_d,
+        D x_d ≤ e
+    x_d ∈ X_d,
 
 and solve the knapsack at the end.
 
@@ -134,10 +134,34 @@ surrogate decomposition algorithm assemble solutions to all the
 subproblems and find a superoptimal point approximately in (the convex
 hull of) all the constraints' feasible domains.
 
-The set covering solver in this repo applies surrogate decomposition
-in the extreme case, where each value to cover (each linear covering
-constraint) gets its own copy of the decision variables.  It also
-halves the number of relaxed constraints (and thus of experts) by
+Rather than solving (a fractional relaxation of)
+
+        min c'x
+    s.t.
+        A x ≤ b
+        D x ≤ e
+    x ∈ X,
+
+we can solve the more general
+
+        min c'x
+    s.t.
+        x ∈ F_A
+        x ∈ F_B
+    x ∈ X,
+
+where `F_A` and `F_B` are arbitrary feasible sets for which we have
+linear optimisation oracles that can solve
+
+        min c'x
+    s.t.
+        x ∈ F_A
+    x ∈ X
+
+The set covering solver in this repository implements an extreme form
+of surrogate decomposition where each value to cover (each linear
+covering constraint) gets its own copy of the decision variables.  It
+also halves the number of relaxed constraints (and thus of experts) by
 observing that it's always OK if some initial decision variable 
-`x[i] > x_a[i]` for a constraint `a`.  Thus, we only need the linking
-constraints `x >= x_a`, and not the symmetrical `x <= x_a`.
+`x[i] > x_a[i]` for a constraint `a`.  Thus, we only need the
+linking constraints `x ≥ x_a`, and not the symmetrical `x ≤ x_a`.
