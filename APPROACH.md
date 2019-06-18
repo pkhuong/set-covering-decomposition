@@ -116,7 +116,7 @@ and solve the knapsack
 
         min c'x
     s.t.
-        (w_a+ - w_a- + w_d+ - w_d-) x ≤ (w_a+ - w_a-)x_a  +(w_a+ - w_a-)x_d (*)
+        (w_a+ - w_a- + w_d+ - w_d-) x ≤ (w_a+ - w_a-)x_a  +(w_a+ - w_a-)x_d
      x ∈ X
 
 once we have values for `x_a` and `x_d`.
