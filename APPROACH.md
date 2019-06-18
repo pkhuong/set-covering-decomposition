@@ -133,3 +133,11 @@ simultaneously, we can solve each constraint naturally, and let the
 surrogate decomposition algorithm assemble solutions to all the
 subproblems and find a superoptimal point approximately in (the convex
 hull of) all the constraints' feasible domains.
+
+The set covering solver in this repo applies surrogate decomposition
+in the extreme case, where each value to cover (each linear covering
+constraint) gets its own copy of the decision variables.  It also
+halves the number of relaxed constraints (and thus of experts) by
+observing that it's always OK if some initial decision variable 
+`x[i] > x_a[i]` for a constraint `a`.  Thus, we only need the linking
+constraints `x >= x_a`, and not the symmetrical `x <= x_a`.
