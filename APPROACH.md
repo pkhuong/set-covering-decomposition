@@ -1,7 +1,7 @@
 The relaxation approach
 =======================
 
-I already covered the simpler [surrogate relaxation](https://pvk.ca/Blog/2019/04/23/fractional-set-covering-with-experts/#disqus_thread)
+I already covered the simpler [surrogate relaxation](https://pvk.ca/Blog/2019/04/23/fractional-set-covering-with-experts/)
 approach on my blog.
 
 This repository implements [surrogate *decomposition*](https://www.authorea.com/users/2541/articles/324048-no-regret-surrogate-decomposition?access_token=7PRDD1XaWLjc8wglr1_PLg).
