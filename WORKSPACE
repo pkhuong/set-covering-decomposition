@@ -60,3 +60,35 @@ http_archive(
     strip_prefix = "bazel-compilation-database-d5a0ee259aa356886618eafae17ca05ebf79d6c2",
     urls = ["https://github.com/grailbio/bazel-compilation-database/archive/d5a0ee259aa356886618eafae17ca05ebf79d6c2.zip"],  # 2019-06-07
 )
+
+http_archive(
+    name = "csm",
+    sha256 = "da3e468399f0a232c33058b08ca148f5a773df59d155472422e90a3dcb5b8dd9",
+    strip_prefix = "csm-2f9c09b7b189e3c2dc67b2832874ffb2cce25308",
+    urls = ["https://github.com/pkhuong/csm/archive/2f9c09b7b189e3c2dc67b2832874ffb2cce25308.zip"],  # 2019-06-25
+)
+
+http_archive(
+    name = "martingale-cs",
+    sha256 = "474bc5306dd6c4bcada72aa55b3845722a9e63ff553188314388128e84a4a0f3",
+    strip_prefix = "martingale-cs-8747e64ccf33e823c509bdcca11c47d4524cb475",
+    urls = ["https://github.com/pkhuong/martingale-cs/archive/8747e64ccf33e823c509bdcca11c47d4524cb475.zip"],  # 2019-06-30
+)
+
+http_archive(
+    name = "one-sided-ks",
+    sha256 = "043ec4abe7e39acaae43df26988a2347fb718ef3cbd9e30d111a0def0de537ff",
+    strip_prefix = "one-sided-ks-266707a7ee987f1b4e22b17614a71fd0b87375b8",
+    urls = ["https://github.com/pkhuong/one-sided-ks/archive/266707a7ee987f1b4e22b17614a71fd0b87375b8.zip"],  # 2019-06-25
+)
+
+http_archive(
+    name = "com_github_nelhage_rules_boost",
+    sha256 = "b24dd149c0cc9f7ff5689d91f99aaaea0d340baf9911439b573f02074148533a",
+    strip_prefix = "rules_boost-417642961150e987bc1ac78c7814c617566ffdaa",
+    urls = ["https://github.com/nelhage/rules_boost/archive/417642961150e987bc1ac78c7814c617566ffdaa.zip"],  # 2019-06-29
+)
+
+load("@com_github_nelhage_rules_boost//:boost/boost.bzl", "boost_deps")
+
+boost_deps()
