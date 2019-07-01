@@ -55,3 +55,20 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
+
+cc_library(
+    name = "constructable-array",
+    hdrs = ["internal/constructable-array.h"],
+    visibility = ["//visibility:private"],
+    deps = [],
+)
+
+cc_test(
+    name = "constructable-array_test",
+    srcs = ["internal/constructable-array_test.cc"],
+    deps = [
+        ":constructable-array",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
