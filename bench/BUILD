@@ -32,3 +32,26 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
+
+cc_library(
+    name = "time",
+    srcs = ["time.cc"],
+    hdrs = ["time.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/synchronization",
+    ],
+)
+
+cc_test(
+    name = "time_test",
+    srcs = ["time_test.cc"],
+    deps = [
+        ":time",
+        "@com_google_absl//absl/time",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
