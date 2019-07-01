@@ -57,6 +57,49 @@ cc_test(
 )
 
 cc_library(
+    name = "compare-functions",
+    hdrs = ["compare-functions.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":constructable-array",
+        ":meta",
+        ":test-params",
+        ":time",
+        "//:prng",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_test(
+    name = "compare-functions_test",
+    srcs = ["compare-functions_test.cc"],
+    deps = [
+        ":compare-functions",
+        ":test-params",
+        "@com_google_absl//absl/time",
+        "@com_google_absl//absl/types:span",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "compare-functions-sign_test",
+    srcs = ["compare-functions-sign_test.cc"],
+    deps = [
+        ":compare-functions",
+        ":sign-test",
+        ":test-params",
+        "@com_google_absl//absl/time",
+        "@com_google_absl//absl/types:span",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
     name = "constructable-array",
     hdrs = ["internal/constructable-array.h"],
     visibility = ["//visibility:private"],
@@ -70,5 +113,17 @@ cc_test(
         ":constructable-array",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "meta",
+    hdrs = ["internal/meta.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/meta:type_traits",
+        "@com_google_absl//absl/types:span",
+        "@com_google_absl//absl/utility",
     ],
 )
