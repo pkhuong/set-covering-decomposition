@@ -34,6 +34,31 @@ cc_test(
 )
 
 cc_library(
+    name = "quantile-test",
+    srcs = ["quantile-test.cc"],
+    hdrs = ["quantile-test.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":test-params",
+        "@com_google_absl//absl/container:fixed_array",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/types:span",
+        "@csm",
+    ],
+)
+
+cc_test(
+    name = "quantile-test_test",
+    srcs = ["quantile-test_test.cc"],
+    deps = [
+        ":quantile-test",
+        ":test-params",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
     name = "time",
     srcs = ["time.cc"],
     hdrs = ["time.h"],
@@ -91,6 +116,21 @@ cc_test(
     deps = [
         ":compare-functions",
         ":sign-test",
+        ":test-params",
+        "@com_google_absl//absl/time",
+        "@com_google_absl//absl/types:span",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "compare-functions-quantile_test",
+    size = "large",
+    srcs = ["compare-functions-quantile_test.cc"],
+    deps = [
+        ":compare-functions",
+        ":quantile-test",
         ":test-params",
         "@com_google_absl//absl/time",
         "@com_google_absl//absl/types:span",
