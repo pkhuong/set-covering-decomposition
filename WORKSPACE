@@ -63,9 +63,9 @@ http_archive(
 
 http_archive(
     name = "csm",
-    sha256 = "da3e468399f0a232c33058b08ca148f5a773df59d155472422e90a3dcb5b8dd9",
-    strip_prefix = "csm-2f9c09b7b189e3c2dc67b2832874ffb2cce25308",
-    urls = ["https://github.com/pkhuong/csm/archive/2f9c09b7b189e3c2dc67b2832874ffb2cce25308.zip"],  # 2019-06-25
+    sha256 = "af816ca7911d836e86ff35983012eff9b091d00c071ca51fb5d1f8413b5cd9ca",
+    strip_prefix = "csm-463915bdabb94e474ed2e491b14d817b959e1a3e",
+    urls = ["https://github.com/pkhuong/csm/archive/463915bdabb94e474ed2e491b14d817b959e1a3e.zip"],  # 2019-07-14
 )
 
 http_archive(
