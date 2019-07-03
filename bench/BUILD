@@ -60,6 +60,30 @@ cc_test(
 )
 
 cc_library(
+    name = "bounded-mean-test",
+    srcs = ["bounded-mean-test.cc"],
+    hdrs = ["bounded-mean-test.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":test-params",
+        "@com_google_absl//absl/types:span",
+        "@csm",
+        "@martingale-cs//:martingale-cs",
+    ],
+)
+
+cc_test(
+    name = "bounded-mean-test_test",
+    srcs = ["bounded-mean-test_test.cc"],
+    deps = [
+        ":bounded-mean-test",
+        ":test-params",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
     name = "time",
     srcs = ["time.cc"],
     hdrs = ["time.h"],
@@ -133,7 +157,20 @@ cc_test(
         ":compare-functions",
         ":quantile-test",
         ":test-params",
-        "@com_google_absl//absl/time",
+        "@com_google_absl//absl/types:span",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "compare-functions-bounded-mean_test",
+    size = "large",
+    srcs = ["compare-functions-bounded-mean_test.cc"],
+    deps = [
+        ":bounded-mean-test",
+        ":compare-functions",
+        ":test-params",
         "@com_google_absl//absl/types:span",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
