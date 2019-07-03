@@ -77,9 +77,9 @@ http_archive(
 
 http_archive(
     name = "one-sided-ks",
-    sha256 = "043ec4abe7e39acaae43df26988a2347fb718ef3cbd9e30d111a0def0de537ff",
-    strip_prefix = "one-sided-ks-266707a7ee987f1b4e22b17614a71fd0b87375b8",
-    urls = ["https://github.com/pkhuong/one-sided-ks/archive/266707a7ee987f1b4e22b17614a71fd0b87375b8.zip"],  # 2019-06-25
+    sha256 = "848563c6a34ec5b34f8747c3cf23c781d657e3095b949089229d5b11132bc598",
+    strip_prefix = "one-sided-ks-30cae6c134196bb42b292746177f35c065d42852",
+    urls = ["https://github.com/pkhuong/one-sided-ks/archive/30cae6c134196bb42b292746177f35c065d42852.zip"],  # 2019-07-20
 )
 
 http_archive(
