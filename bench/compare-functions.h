@@ -50,6 +50,9 @@
 // with `Observe()` on a list of results returned by `comparator`,
 // until `Done()` returns true. `CompareFunctions` then finally returns the
 // value returned by `analysis->Summary(&std::clog)`.
+
+#include <assert.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
@@ -237,9 +240,11 @@ class StatisticGenerator {
   // avoid giving too much weight to warm up artifacts early on.
   static constexpr uint64_t kMinObservations = 500;
 
-  explicit StatisticGenerator(size_t num_threads, Generator generator,
-                              PrepA prep_a, FnA fn_a, PrepB prep_b, FnB fn_b,
-                              Comparator comparator);
+  explicit StatisticGenerator(Generator generator, PrepA prep_a, FnA fn_a,
+                              PrepB prep_b, FnB fn_b, Comparator comparator);
+
+  // (Re)creates internal worker threads.
+  void Start(size_t num_threads);
 
   // Notifies all worker threads to stop and waits for them to
   // publish what they have.
@@ -325,18 +330,26 @@ template <typename Generator, typename PrepA, typename FnA, typename PrepB,
           typename FnB, typename Comparator>
 __attribute__((__noinline__))
 StatisticGenerator<Generator, PrepA, FnA, PrepB, FnB,
-                   Comparator>::StatisticGenerator(size_t num_threads,
-                                                   Generator generator,
+                   Comparator>::StatisticGenerator(Generator generator,
                                                    PrepA prep_a, FnA fn_a,
                                                    PrepB prep_b, FnB fn_b,
                                                    Comparator comparator)
     : context_(std::move(generator), std::move(prep_a), std::move(fn_a),
-               std::move(prep_b), std::move(fn_b), std::move(comparator)) {
-  if (num_threads > 1) {
-    workers_.reserve(num_threads - 1);
-    for (size_t i = 1; i < num_threads; ++i) {
-      workers_.emplace_back(WorkerFn, Context(context_), &done_, &acc_);
-    }
+               std::move(prep_b), std::move(fn_b), std::move(comparator)) {}
+
+template <typename Generator, typename PrepA, typename FnA, typename PrepB,
+          typename FnB, typename Comparator>
+__attribute__((__noinline__)) void
+StatisticGenerator<Generator, PrepA, FnA, PrepB, FnB, Comparator>::Start(
+    size_t num_threads) {
+  workers_.clear();
+  if (num_threads <= 1) {
+    return;
+  }
+
+  workers_.reserve(num_threads - 1);
+  for (size_t i = 1; i < num_threads; ++i) {
+    workers_.emplace_back(WorkerFn, Context(context_), &done_, &acc_);
   }
 }
 
@@ -589,14 +602,9 @@ auto CompareFunctions(const TestParams& params, Generator generator,
   GetTicksOverhead();
 
   internal::StatisticGenerator<Generator, PrepA, FnA, PrepB, FnB, Comparator>
-      stat_gen(std::max<size_t>(1, params.num_threads), std::move(generator),
-               std::move(prep_a), std::move(fn_a), std::move(prep_b),
-               std::move(fn_b), std::move(comparator));
+      stat_gen(std::move(generator), std::move(prep_a), std::move(fn_a),
+               std::move(prep_b), std::move(fn_b), std::move(comparator));
 
-  const absl::Time deadline = absl::Now() + params.timeout;
-  const uint64_t max_comparisons = params.max_comparisons;
-  const uint64_t min_comparisons =
-      std::max(params.min_count, stat_gen.kMinObservations);
   uint64_t num_comparisons = 0;
   const auto consume = [analysis, &stat_gen, &num_comparisons] {
     auto stat_chunks = stat_gen.Consume();
@@ -606,19 +614,52 @@ auto CompareFunctions(const TestParams& params, Generator generator,
     }
   };
 
-  while (num_comparisons < max_comparisons) {
-    if (deadline != absl::InfiniteFuture() && absl::Now() > deadline) {
-      break;
+  const absl::Time deadline = absl::Now() + params.timeout;
+  const uint64_t max_comparisons = params.max_comparisons;
+  const uint64_t min_comparisons =
+      std::max(params.min_count, stat_gen.kMinObservations);
+
+  // Each inner loop runs an analysis until `Done()` returns true
+  // enough times in a row.
+  //
+  // The outer loop exists to restart the worker threads and resume
+  // generating data if the analysis changes its mind just as we're
+  // about to return the summary.
+  for (;;) {
+    uint32_t consecutive_done = 0;
+
+    stat_gen.Start(params.num_threads);
+    while (num_comparisons < max_comparisons) {
+      if (deadline != absl::InfiniteFuture() && absl::Now() > deadline) {
+        break;
+      }
+      if (num_comparisons >= min_comparisons) {
+        if (analysis->Done()) {
+          if (++consecutive_done >= params.confirm_done) {
+            break;
+          }
+        } else {
+          consecutive_done = 0;
+        }
+      }
+
+      consume();
     }
-    if (num_comparisons >= min_comparisons && analysis->Done()) {
+
+    stat_gen.Stop();
+    consume();
+    if (analysis->Done()) {
       break;
     }
 
-    consume();
+    assert(params.retry_after_thread_cancel &&
+           "analysis->Done() should act like a sticky bit.");
+    if (!params.retry_after_thread_cancel ||
+        num_comparisons >= max_comparisons || absl::Now() >= deadline) {
+      break;
+    }
   }
 
-  stat_gen.Stop();
-  consume();
   return analysis->Summary(&std::clog);
 }
 }  // namespace bench

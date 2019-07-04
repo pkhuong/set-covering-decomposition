@@ -55,7 +55,7 @@ __attribute__((__noinline__)) void NopCallee() { asm volatile(""); }
 const WRAP_FUNCTION(NopCallee) Nop;
 
 TEST(CompareFunctionsKSTest, FastAA) {
-  KolmogorovSmirnovTest test(TestParams()
+  KolmogorovSmirnovTest test(StrictTestParams()
                                  .SetMaxComparisons(100000)
                                  .SetNumThreads(1)
                                  .SetMinEffect(2)
@@ -73,7 +73,7 @@ TEST(CompareFunctionsKSTest, FastAA) {
 }
 
 TEST(CompareFunctionsKSTest, FastAASufficientMinEffectToDetectTie) {
-  KolmogorovSmirnovTest test(TestParams()
+  KolmogorovSmirnovTest test(StrictTestParams()
                                  .SetMaxComparisons(10000000)
                                  .SetNumThreads(1)
                                  // Looser MinEffect and MinDfEffect means
@@ -90,7 +90,7 @@ TEST(CompareFunctionsKSTest, FastAASufficientMinEffectToDetectTie) {
 // Slower `Nop` calls are slightly more challenging, since they
 // introduce more noise.
 TEST(CompareFunctionsKSTest, SlowAA) {
-  KolmogorovSmirnovTest test(TestParams()
+  KolmogorovSmirnovTest test(StrictTestParams()
                                  .SetMaxComparisons(100000)
                                  .SetNumThreads(1)
                                  .SetMinEffect(2)
@@ -103,7 +103,7 @@ TEST(CompareFunctionsKSTest, SlowAA) {
 }
 
 TEST(CompareFunctionsKSTest, SlowAASufficientMinEffectToDetectTie) {
-  KolmogorovSmirnovTest test(TestParams()
+  KolmogorovSmirnovTest test(StrictTestParams()
                                  .SetMaxComparisons(10000000)
                                  .SetNumThreads(1)
                                  // Looser MinEffect and MinDfEffect means
@@ -118,7 +118,7 @@ TEST(CompareFunctionsKSTest, SlowAASufficientMinEffectToDetectTie) {
 }
 
 TEST(CompareFunctionsKSTest, ALower) {
-  KolmogorovSmirnovTest test(TestParams()
+  KolmogorovSmirnovTest test(StrictTestParams()
                                  .SetMaxComparisons(1000000)
                                  .SetNumThreads(1)
                                  .SetMinEffect(1)
@@ -132,7 +132,7 @@ TEST(CompareFunctionsKSTest, ALower) {
 }
 
 TEST(CompareFunctionsKSTest, AHigher) {
-  KolmogorovSmirnovTest test(TestParams()
+  KolmogorovSmirnovTest test(StrictTestParams()
                                  .SetMaxComparisons(10000000)
                                  .SetNumThreads(1)
                                  .SetMinEffect(1)

@@ -9,6 +9,8 @@
 #include "absl/types/optional.h"
 
 namespace bench {
+struct TestParams;
+
 // Result for one statistical test.
 enum class ComparisonResult {
   // Not enough data to conclude anything.
@@ -30,6 +32,10 @@ enum class ComparisonResult {
 };
 
 std::ostream& operator<<(std::ostream& out, ComparisonResult result);
+
+// Returns a TestParams that is suitable for testing statistical tests.
+// confirm_done is 0, and retry_after_thread_cancel false.
+TestParams StrictTestParams();
 
 struct TestParams {
   explicit TestParams() = default;
@@ -170,7 +176,7 @@ struct TestParams {
 
   // Sets the maximum number of threads (including the calling thread)
   // used to generate data.
-  TestParams& SetNumThreads(uint64_t num_threads_) {
+  TestParams& SetNumThreads(uint32_t num_threads_) {
     num_threads = num_threads_;
     return *this;
   }
@@ -197,7 +203,14 @@ struct TestParams {
 
   uint64_t max_comparisons{std::numeric_limits<uint64_t>::max()};
   absl::Duration timeout{absl::InfiniteDuration()};
-  uint64_t num_threads{1};
+  uint32_t num_threads{1};
+  // Only stop once Done() has returned true `confirm_done` in a row.
+  uint32_t confirm_done{2};
+  // If true, restart the worker threads if we stopped them and
+  // `Done()` now returns false.
+  //
+  // If this is false, a flapping analysis will trigger an assert.
+  bool retry_after_thread_cancel{true};
   double eps{1e-6};
   double log_eps{0};
   absl::optional<ComparisonResult> stop_on_first;

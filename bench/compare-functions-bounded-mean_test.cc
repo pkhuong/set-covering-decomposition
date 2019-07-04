@@ -18,7 +18,7 @@ __attribute__((__noinline__)) void NopCallee() { asm volatile(""); }
 const WRAP_FUNCTION(NopCallee) Nop;
 
 TEST(CompareFunctionsBoundedMeanTest, FastAA) {
-  BoundedMeanTest test(TestParams()
+  BoundedMeanTest test(StrictTestParams()
                            .SetMaxComparisons(10000000)
                            .SetStopOnFirst(ComparisonResult::kTie)
                            .SetMinEffect(3)
@@ -31,7 +31,7 @@ TEST(CompareFunctionsBoundedMeanTest, FastAA) {
 }
 
 TEST(CompareFunctionsBoundedMeanTest, SlowAA) {
-  BoundedMeanTest test(TestParams()
+  BoundedMeanTest test(StrictTestParams()
                            .SetMaxComparisons(10000000)
                            .SetStopOnFirst(ComparisonResult::kTie)
                            .SetMinEffect(3)
@@ -44,7 +44,7 @@ TEST(CompareFunctionsBoundedMeanTest, SlowAA) {
 }
 
 TEST(CompareFunctionsBoundedMeanTest, AB) {
-  BoundedMeanTest test(TestParams()
+  BoundedMeanTest test(StrictTestParams()
                            .SetMaxComparisons(10000000)
                            .SetMinEffect(3)
                            .SetOutlierLimit(200, 1e-4)
@@ -67,7 +67,7 @@ TEST(CompareFunctionsBoundedMeanTest, AB) {
 }
 
 TEST(CompareFunctionsBoundedMeanTest, Outliers) {
-  BoundedMeanTest test(TestParams()
+  BoundedMeanTest test(StrictTestParams()
                            .SetMaxComparisons(1000000)
                            .SetStopOnFirst(ComparisonResult::kALower)
                            .SetMinEffect(0)

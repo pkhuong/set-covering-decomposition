@@ -22,7 +22,8 @@ __attribute__((__noinline__)) void NopCallee() { asm volatile(""); }
 const WRAP_FUNCTION(NopCallee) Nop;
 
 TEST(CompareFunctionsSignTest, FastAA) {
-  SignTest test(TestParams().SetMaxComparisons(10000000).SetNumThreads(1));
+  SignTest test(
+      StrictTestParams().SetMaxComparisons(10000000).SetNumThreads(1));
 
   const auto result = CompareFunctions(FastNop, FastNop, FastNop, &test);
   EXPECT_EQ(result, test.Summary());
@@ -30,7 +31,8 @@ TEST(CompareFunctionsSignTest, FastAA) {
 }
 
 TEST(CompareFunctionsSignTest, SlowAA) {
-  SignTest test(TestParams().SetMaxComparisons(10000000).SetNumThreads(1));
+  SignTest test(
+      StrictTestParams().SetMaxComparisons(10000000).SetNumThreads(1));
 
   const auto result = CompareFunctions(Nop, Nop, Nop, &test);
   EXPECT_EQ(result, test.Summary());
@@ -38,7 +40,7 @@ TEST(CompareFunctionsSignTest, SlowAA) {
 }
 
 TEST(CompareFunctionsSignTest, ALtB) {
-  SignTest test(TestParams().SetMaxComparisons(1000000).SetNumThreads(1));
+  SignTest test(StrictTestParams().SetMaxComparisons(1000000).SetNumThreads(1));
 
   const auto result =
       CompareFunctions(FastNop, FastNop, [] { asm volatile("pause"); }, &test);
@@ -47,7 +49,7 @@ TEST(CompareFunctionsSignTest, ALtB) {
 }
 
 TEST(CompareFunctionsSignTest, AGtB) {
-  SignTest test(TestParams().SetMaxComparisons(1000000).SetNumThreads(1));
+  SignTest test(StrictTestParams().SetMaxComparisons(1000000).SetNumThreads(1));
 
   const auto result =
       CompareFunctions(FastNop, [] { asm volatile("pause"); }, FastNop, &test);
