@@ -5,6 +5,7 @@
 #include <limits>
 #include <ostream>
 
+#include "absl/time/time.h"
 #include "absl/types/optional.h"
 
 namespace bench {
@@ -174,6 +175,12 @@ struct TestParams {
     return *this;
   }
 
+  // Stop after timeout, if we haven't reached the iteration limit.
+  TestParams& SetTimeout(absl::Duration timeout_) {
+    timeout = timeout_;
+    return *this;
+  }
+
   // Set `log_eps` to `ln(eps)` after a Bonferroni correction for `n`
   // tests.
   TestParams& SetLogEpsForNTests(size_t n);
@@ -189,6 +196,7 @@ struct TestParams {
   double min_df_effect{0};
 
   uint64_t max_comparisons{std::numeric_limits<uint64_t>::max()};
+  absl::Duration timeout{absl::InfiniteDuration()};
   uint64_t num_threads{1};
   double eps{1e-6};
   double log_eps{0};
