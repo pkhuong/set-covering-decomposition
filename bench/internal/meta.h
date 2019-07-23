@@ -1,5 +1,7 @@
 #ifndef BENCH_META_H
 #define BENCH_META_H
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <functional>
 #include <iostream>
@@ -15,6 +17,56 @@
 // Misc C++ metaprogramming noise for compare-functions.h
 namespace bench {
 namespace internal {
+// Wrap timed result in this struct to work around potential ABI
+// issues when sharing std::tuple between c++ standard libaries.
+template <typename T>
+struct TimedResult {
+  static constexpr size_t kResultSize = sizeof(T);
+
+  uint64_t begin;
+  uint64_t end;
+
+  // It's the size of T that's really up for debate, so only compare
+  // that.  The rest is mandated by the C ABI.
+  T result;
+};
+
+template <typename T>
+constexpr size_t TimedResult<T>::kResultSize;
+
+// Try to detect obvious cases of ABI unsafety.
+template <typename T>
+
+// This constraint is a relaxation of std::is_pod, which checks that
+// a class or struct definition is compatible with C.
+//
+// Checking for standard layout guarantees that the compiler can't
+// mess with the ordering of members too much, and trivial copyability
+// means it's safe to create another instance by `memcpy`ing, so the
+// destructor must also be trivial.
+struct IsProbablyABISafe
+    : public std::integral_constant<bool,
+                                    std::is_trivially_copyable<T>::value &&
+                                        std::is_standard_layout<T>::value> {};
+
+// But we know multi-elements tuples aren't.
+template <typename T, typename U, typename... Vs>
+struct IsProbablyABISafe<std::tuple<T, U, Vs...>> : public std::false_type {};
+
+// There aren't too many ways to implement nullary tuples,
+// so this is probably safe.
+template <>
+struct IsProbablyABISafe<std::tuple<>> : public std::true_type {};
+
+template <typename T>
+struct IsProbablyABISafe<std::tuple<T>> : public IsProbablyABISafe<T> {};
+
+template <typename T>
+struct IsProbablyABISafe<TimedResult<T>> : public IsProbablyABISafe<T> {};
+
+static_assert(!IsProbablyABISafe<std::tuple<int, int>>::value,
+              ">1-element tuple should not be marked safe.");
+
 // The ExplicitFunction class implements the same logic as a
 // std::function<Result(const Arg*)>, except that it relies on
 // function pointers in an explicit vtable to implement its
@@ -32,14 +84,20 @@ namespace internal {
 template <typename Result, typename Arg>
 class ExplicitFunction {
  public:
+  using ExpectedFunctionType = std::function<Result(const Arg*)>;
+
   struct Ops {
     size_t size_of_result;
     size_t size_of_arg;
+    bool is_probably_abi_safe;
     const char* function_typename;
     Result (*invoke)(void*, const Arg*);
     void* (*copy)(const void*);
     void (*destroy)(void*);
   };
+
+  static constexpr bool kIsProbablyABISafe =
+      IsProbablyABISafe<Arg>::value && IsProbablyABISafe<Result>::value;
 
   ExplicitFunction(const Ops* ops, void* context)
       : ops_(ops), context_(context) {
@@ -82,17 +140,22 @@ class ExplicitFunction {
       return false;
     }
 
-    std::function<Result(const Arg*)> expected_fn;
+    ExpectedFunctionType expected_fn;
     const char* expected_name = typeid(expected_fn).name();
 
-    if (ops_->size_of_result != sizeof(Result) ||
+    if (ops_->size_of_result != Result::kResultSize ||
         ops_->size_of_arg != sizeof(Arg) ||
+        ops_->is_probably_abi_safe != kIsProbablyABISafe ||
         std::strcmp(expected_name, ops_->function_typename) != 0) {
-      std::cerr << "ABI mismatch for << " << __PRETTY_FUNCTION__
+      std::cerr << "ABI mismatch for " << __PRETTY_FUNCTION__
                 << " : ops->size_of_result " << ops_->size_of_result << " VS "
-                << sizeof(Result) << ", ops->size_of_arg " << ops_->size_of_arg
-                << " VS " << sizeof(Arg) << ", ops->function_typename "
-                << ops_->function_typename << " VS " << expected_name << ".\n";
+                << Result::kResultSize << ", ops->size_of_arg "
+                << ops_->size_of_arg << " VS " << sizeof(Arg)
+                << ", ops->is_probably_abi_safe "
+                << (ops_->is_probably_abi_safe ? "true" : "false") << " VS "
+                << (kIsProbablyABISafe ? "true" : "false")
+                << ", ops->function_typename " << ops_->function_typename
+                << " VS " << expected_name << ".\n";
       return false;
     }
 
@@ -131,6 +194,13 @@ struct Identity {
   const T& operator()(const T& x) const {
     return x;
   }
+};
+
+// Constructs the ExplicitFunction type for a function that accepts
+// a `const GenResult*` and returns a `TimedResult<FnResult>`.
+template <typename FnResult, typename GenResult>
+struct TimingFunctionTypeGenerator {
+  using type = ExplicitFunction<TimedResult<FnResult>, GenResult>;
 };
 
 // Applies fn(args...), and returns the result as a tuple: void
@@ -176,6 +246,19 @@ struct CallAndTuplify {
   }
 };
 
+// Determines whether `FunctionType` is a `TimingFunction` that can
+// accept the tuplified instances generated by `Generator`.
+template <typename Generator, typename FunctionType>
+struct IsTimingFunctionForGenerator : public std::false_type {};
+
+template <typename Generator, typename FnResult>
+struct IsTimingFunctionForGenerator<
+    Generator,
+    ExplicitFunction<TimedResult<FnResult>,
+                     decltype(CallAndTuplify()(std::declval<Generator>(),
+                                               std::make_tuple()))>>
+    : public std::true_type {};
+
 // `const T` if the T functor can be invoked as const and is fast to
 // copy, `const T&` otherwise, or `T&` if the functor must be mutable.
 template <typename T, typename Args,
@@ -216,18 +299,18 @@ struct CopyFnTypeIfPossible<T, Args, false,
 };
 
 // Returns true if all the time observations are ordered.
-template <typename... T>
+template <typename T>
 __attribute__((__noinline__)) bool AllInOrder(
-    absl::Span<const std::tuple<uint64_t, uint64_t, T...>> values) {
+    absl::Span<const std::tuple<TimedResult<T>>> values) {
   if (values.empty()) {
     return true;
   }
 
-  uint64_t previous = std::get<0>(values[0]);
-  for (const auto& value : values) {
-    if (previous <= std::get<0>(value) &&
-        std::get<0>(value) <= std::get<1>(value)) {
-      previous = std::get<1>(value);
+  uint64_t previous = std::get<0>(values[0]).begin;
+  for (const auto& tuple : values) {
+    const auto& value = std::get<0>(tuple);
+    if (previous <= value.begin && value.begin <= value.end) {
+      previous = value.end;
     } else {
       return false;
     }
