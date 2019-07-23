@@ -521,38 +521,21 @@ StatisticGenerator<Generator, FnA, FnB, Comparator>::WorkImpl(
 
   SetupInterruptDetection();
 
-#if ABSL_CACHELINE_SIZE >= 128
-#define PAD_TIMING_CALL(FN) asm volatile(".align 128\n\t" : "+r"(FN)::"memory");
-#elif ABSL_CACHELINE_SIZE == 64
-#define PAD_TIMING_CALL(FN) asm volatile(".align 64\n\t" : "+r"(FN)::"memory");
-#else
-#define PAD_TIMING_CALL(FN) asm volatile(".align 32\n\t" : "+r"(FN)::"memory");
-#endif
-
   if (kCallAFirst) {
-    // Insert padding before each indirect call to make sure they get
+    // `ExplicitFunction::operator()` is always_inline and already
+    // includes padding before the indirect call to make sure they get
     // their own cache line, and thus prediction slot (hopefully).
-    auto* fn_a = &context->fn_a;
-    PAD_TIMING_CALL(fn_a);
-    results.a.EmplaceAt(0, (*fn_a)(&work_unit));
-    auto* fn_b = &context->fn_b;
-    PAD_TIMING_CALL(fn_b);
-    results.b.EmplaceAt(0, (*fn_b)(&work_unit));
+    results.a.EmplaceAt(0, context->fn_a(&work_unit));
+    results.b.EmplaceAt(0, context->fn_b(&work_unit));
     static_assert(kResultsPerCall == 1,
                   "kResultsPerCall must match number of results exactly.");
   } else {
     // Same thing, but mirrored.
-    auto* fn_b = &context->fn_b;
-    PAD_TIMING_CALL(fn_b);
-    results.b.EmplaceAt(0, (*fn_b)(&work_unit));
-    auto* fn_a = &context->fn_a;
-    PAD_TIMING_CALL(fn_a);
-    results.a.EmplaceAt(0, (*fn_a)(&work_unit));
+    results.b.EmplaceAt(0, context->fn_b(&work_unit));
+    results.a.EmplaceAt(0, context->fn_a(&work_unit));
     static_assert(kResultsPerCall == 1,
                   "kResultsPerCall must match number of results exactly.");
   }
-
-#undef PAD_TIMING_CALL
 
   return PublishResults(std::move(work_unit), &results.a, &results.b,
                         &context->comparator, &context->buffer);
@@ -578,18 +561,15 @@ template <typename Generator, typename Prep, typename Fn,
           typename FnResult = decltype(internal::CallAndTuplify()(
               std::declval<Fn>(), std::declval<PrepResult>())),
           typename Result = std::tuple<uint64_t, uint64_t, FnResult>>
-std::function<Result(const GenResult*)> MakeTimingFunction(Prep prep_fn,
-                                                           Fn timed_fn) {
+internal::ExplicitFunction<Result, GenResult> MakeTimingFunction(Prep prep_fn,
+                                                                 Fn timed_fn) {
   // Warn about any suboptimal function type.
   internal::CopyFnTypeIfPossible<Fn, PrepResult>::BadUsageNotice();
 
-  // Force extra alignment to avoid any consistent measurement error
-  // introduced by mechanisms that work at extra wide granularity.  In
-  // particular we want to make sure that fetching and decoding the
-  // code does not affect specific instances of this function
-  // differently.
-  return [ prep_fn, timed_fn ](const GenResult* work_unit) __attribute__((
-      __aligned__(2 * ABSL_CACHELINE_SIZE), __noinline__)) mutable {
+  // The timer function body will be inlined in the invoke vtable
+  // function below.
+  auto timer = [ prep_fn, timed_fn ](const GenResult* work_unit)
+      __attribute__((__always_inline__)) mutable {
     const internal::CallAndTuplify apply;
 
     typename internal::CopyFnTypeIfPossible<Fn, PrepResult>::type local_fn =
@@ -607,6 +587,35 @@ std::function<Result(const GenResult*)> MakeTimingFunction(Prep prep_fn,
 
     return std::make_tuple(begin, end, std::move(result));
   };
+
+  using TimerT = decltype(timer);
+
+  static const auto invoke =
+      +[](void* context, const GenResult* arg)
+          __attribute__((__noinline__, __aligned__(2 * ABSL_CACHELINE_SIZE))) {
+    auto* local_timer = static_cast<TimerT*>(context);
+    return (*local_timer)(arg);
+  };
+
+  static const auto copy = +[](const void* context) {
+    const auto* local_timer = static_cast<const TimerT*>(context);
+    return static_cast<void*>(new TimerT(*local_timer));
+  };
+
+  static const auto destroy = +[](void* context) {
+    auto* local_timer = static_cast<TimerT*>(context);
+    delete local_timer;
+  };
+
+  static const std::function<Result(const GenResult*)> fn_type;
+
+  static const typename internal::ExplicitFunction<Result, GenResult>::Ops ops =
+      {
+          sizeof(Result), sizeof(GenResult), typeid(fn_type).name(), invoke,
+          copy,           destroy,
+      };
+
+  return internal::ExplicitFunction<Result, GenResult>(&ops, ops.copy(&timer));
 }
 }  // namespace internal
 
