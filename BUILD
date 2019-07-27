@@ -229,6 +229,7 @@ cc_library(
         "-march=native",
         "-mtune=native",
     ],
+    visibility = ["//:__subpackages__"],
     deps = [
         "@com_google_absl//absl/types:span",
     ],

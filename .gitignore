@@ -7,3 +7,4 @@ coverage
 imgui\.ini
 perf\.data*
 kythe_out
+perf-test-worktrees/
