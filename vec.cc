@@ -91,4 +91,18 @@ double ApplyHedgeLoss(absl::Span<const double> losses, double min_loss,
 
   return acc;
 }
+
+std::pair<size_t, double> FindMinValue(absl::Span<const double> xs) {
+  size_t index = 0;
+  double min_val = xs[0];
+
+  // XXX vectorize.
+  for (size_t i = 1, n = xs.size(); i < n; ++i) {
+    const double val_i = xs[i];
+    index = (val_i < min_val) ? i : index;
+    min_val = (val_i < min_val) ? val_i : min_val;
+  }
+
+  return std::make_pair(index, min_val);
+}
 }  // namespace internal
