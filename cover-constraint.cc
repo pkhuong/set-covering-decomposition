@@ -183,16 +183,7 @@ void CoverConstraint::PopulateWeights(
 // The weight vector is never empty nor negative, so we're looking for (any)
 // min-value weight.
 double CoverConstraint::SolveSubproblem(absl::Span<const double> weights) {
-  size_t index = 0;
-  double min_weight = weights[0];
-
-  // XXX vectorize.
-  for (size_t i = 1, n = weights.size(); i < n; ++i) {
-    const double weight_i = weights[i];
-    index = (weight_i < min_weight) ? i : index;
-    min_weight = (weight_i < min_weight) ? weight_i : min_weight;
-  }
-
-  last_solution_ = index;
-  return min_weight;
+  double ret;
+  std::tie(last_solution_, ret) = internal::FindMinValue(weights);
+  return ret;
 }

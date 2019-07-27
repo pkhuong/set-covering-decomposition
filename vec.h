@@ -1,3 +1,6 @@
+#include <cstddef>
+#include <utility>
+
 #include "absl/types/span.h"
 
 // Various vectorized operations
@@ -38,4 +41,8 @@ double ApplyHedgeLossWithForEach(absl::Span<const double> losses,
 
   return ret;
 }
+
+// Returns the index and value of a minimum element in `xs`. `xs` must
+// not be empty.
+std::pair<size_t, double> FindMinValue(absl::Span<const double> xs);
 }  // namespace internal
