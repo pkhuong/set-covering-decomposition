@@ -59,6 +59,7 @@ cc_library(
     deps = [
         ":constructable-array",
         ":meta",
+        ":pooled-thread",
         ":test-params",
         ":time",
         ":timing-function",
@@ -363,5 +364,28 @@ cc_library(
     deps = [
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "pooled-thread",
+    srcs = ["internal/pooled-thread.cc"],
+    hdrs = ["internal/pooled-thread.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/synchronization",
+    ],
+)
+
+cc_test(
+    name = "pooled-thread_test",
+    srcs = ["internal/pooled-thread_test.cc"],
+    deps = [
+        ":pooled-thread",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
     ],
 )

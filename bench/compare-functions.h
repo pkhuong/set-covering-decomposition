@@ -63,7 +63,6 @@
 #include <iostream>
 #include <limits>
 #include <memory>
-#include <thread>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -74,11 +73,12 @@
 #include "absl/base/thread_annotations.h"
 #include "absl/memory/memory.h"
 #include "absl/synchronization/mutex.h"
-#include "absl/synchronization/notification.h"
+#include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "bench/internal/constructable-array.h"
 #include "bench/internal/meta.h"
+#include "bench/internal/pooled-thread.h"
 #include "bench/test-params.h"
 #include "bench/time.h"
 #include "bench/timing-function.h"
@@ -333,14 +333,9 @@ class StatisticGenerator {
 
   // Repeatedly calls `Work` and `Flush` until `Stop()` is called and
   // notifies `done`.
-  static void WorkerFn(Context context, const absl::Notification* done,
-                       Accumulator<Result>* acc);
+  static void WorkerFn(Context context, Accumulator<Result>* acc);
 
-  // This notification is initially null, and populated for each new
-  // batch of worker threads in `Start()`, then signaled and cleared
-  // back to null in `Stop()`.
-  std::unique_ptr<absl::Notification> done_;
-  std::vector<std::thread> workers_;
+  std::vector<internal::PooledThread> workers_;
 
   Context context_;
   Accumulator<Result> acc_;
@@ -368,9 +363,6 @@ StatisticGenerator<Generator, FnA, FnB, Comparator>::StatisticGenerator(
 template <typename Generator, typename FnA, typename FnB, typename Comparator>
 __attribute__((__noinline__)) void
 StatisticGenerator<Generator, FnA, FnB, Comparator>::Start(size_t num_threads) {
-  assert(done_ == nullptr);
-
-  done_ = absl::make_unique<absl::Notification>();
   workers_.clear();
   if (num_threads <= 1) {
     return;
@@ -378,20 +370,16 @@ StatisticGenerator<Generator, FnA, FnB, Comparator>::Start(size_t num_threads) {
 
   workers_.reserve(num_threads - 1);
   for (size_t i = 1; i < num_threads; ++i) {
-    workers_.emplace_back(WorkerFn, Context(context_), done_.get(), &acc_);
+    Context context(context_);
+    auto* acc_ptr = &acc_;
+    workers_.emplace_back([context, acc_ptr] { WorkerFn(context, acc_ptr); });
   }
 }
 
 template <typename Generator, typename FnA, typename FnB, typename Comparator>
 __attribute__((__noinline__)) void
 StatisticGenerator<Generator, FnA, FnB, Comparator>::Stop() {
-  assert(done_ != nullptr);
-  done_->Notify();
-  for (auto& worker : workers_) {
-    worker.join();
-  }
-
-  done_.reset();
+  workers_.clear();
 }
 
 // Flushes `buffer` to `acc`.
@@ -471,10 +459,10 @@ StatisticGenerator<Generator, FnA, FnB, Comparator>::Consume()
     }
   }
 
-  if (done_ != nullptr) {
-    Work(&context_);
-    Flush(&context_.buffer, &acc_);
+  Work(&context_);
+  Flush(&context_.buffer, &acc_);
 
+  {
     absl::MutexLock ml(&acc_.mu);
     swap(ret, acc_.buffers);
   }
@@ -575,8 +563,8 @@ StatisticGenerator<Generator, FnA, FnB, Comparator>::WorkImpl(
 template <typename Generator, typename FnA, typename FnB, typename Comparator>
 /*static*/ __attribute__((__noinline__)) void
 StatisticGenerator<Generator, FnA, FnB, Comparator>::WorkerFn(
-    Context context, const absl::Notification* done, Accumulator<Result>* acc) {
-  while (!done->HasBeenNotified()) {
+    Context context, Accumulator<Result>* acc) {
+  while (!PooledThread::Cancelled()) {
     Work(&context);
     Flush(&context.buffer, acc);
   }
