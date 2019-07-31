@@ -55,7 +55,7 @@ const WRAP_FUNCTION(NopCallee) Nop;
 TEST(CompareFunctionsQuantileTest, FastAA) {
   QuantileTest quantiles(
       {0.2, 0.5, 0.99},
-      TestParams().SetMaxComparisons(1000000).SetNumThreads(1));
+      StrictTestParams().SetMaxComparisons(1000000).SetNumThreads(1));
 
   const auto results = CompareFunctions(FastNop, FastNop, FastNop, &quantiles);
   EXPECT_EQ(results, quantiles.Summary());
@@ -68,10 +68,11 @@ TEST(CompareFunctionsQuantileTest, FastAA) {
 }
 
 TEST(CompareFunctionsQuantileTest, FastAAWithMinEffect) {
-  QuantileTest quantiles(
-      {0.2, 0.5, 0.9},
-      TestParams().SetMaxComparisons(10000000).SetNumThreads(1).SetMinEffect(
-          3));
+  QuantileTest quantiles({0.2, 0.5, 0.9},
+                         StrictTestParams()
+                             .SetMaxComparisons(10000000)
+                             .SetNumThreads(1)
+                             .SetMinEffect(3));
 
   const auto results = CompareFunctions(FastNop, FastNop, FastNop, &quantiles);
   EXPECT_EQ(results, quantiles.Summary());
@@ -81,9 +82,11 @@ TEST(CompareFunctionsQuantileTest, FastAAWithMinEffect) {
 }
 
 TEST(CompareFunctionsQuantileTest, SlowAA) {
-  QuantileTest quantiles(
-      {0.2, 0.5, 0.99},
-      TestParams().SetMaxComparisons(1000000).SetNumThreads(1).SetMinEffect(2));
+  QuantileTest quantiles({0.2, 0.5, 0.99},
+                         StrictTestParams()
+                             .SetMaxComparisons(1000000)
+                             .SetNumThreads(1)
+                             .SetMinEffect(2));
 
   const auto results = CompareFunctions(Nop, Nop, Nop, &quantiles);
   EXPECT_EQ(results, quantiles.Summary());
@@ -94,7 +97,7 @@ TEST(CompareFunctionsQuantileTest, SlowAA) {
 
 TEST(CompareFunctionsQuantileTest, ALower) {
   QuantileTest quantiles({0.2, 0.5, 0.99},
-                         TestParams()
+                         StrictTestParams()
                              .SetMaxComparisons(100000)
                              .SetMinEffect(3)
                              .SetNumThreads(1)
@@ -113,7 +116,7 @@ TEST(CompareFunctionsQuantileTest, ALower) {
 
 TEST(CompareFunctionsQuantileTest, AHigher) {
   QuantileTest quantiles({0.2, 0.5, 0.99},
-                         TestParams()
+                         StrictTestParams()
                              .SetMaxComparisons(100000)
                              .SetMinEffect(3)
                              .SetNumThreads(1)
