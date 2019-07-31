@@ -1,6 +1,8 @@
 #ifndef BENCH_META_H
 #define BENCH_META_H
+#include <cstring>
 #include <functional>
+#include <iostream>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -13,6 +15,115 @@
 // Misc C++ metaprogramming noise for compare-functions.h
 namespace bench {
 namespace internal {
+// The ExplicitFunction class implements the same logic as a
+// std::function<Result(const Arg*)>, except that it relies on
+// function pointers in an explicit vtable to implement its
+// operations, rather than weak-bound magic symbols.
+//
+// This alternative implementation lets us mix functions that depend
+// on different runtime systems, as long as we isolate symbol
+// resolution correctly with `dlmopen(3)`.
+//
+// The pointer-heavy implementation ensures that any implementation is
+// ABI compatible.
+//
+// This class has no thread-safety guarantee.  Each thread should have
+// its own copy.
+template <typename Result, typename Arg>
+class ExplicitFunction {
+ public:
+  struct Ops {
+    size_t size_of_result;
+    size_t size_of_arg;
+    const char* function_typename;
+    Result (*invoke)(void*, const Arg*);
+    void* (*copy)(const void*);
+    void (*destroy)(void*);
+  };
+
+  ExplicitFunction(const Ops* ops, void* context)
+      : ops_(ops), context_(context) {
+    if (!IsValid()) {
+      ops_->destroy(context_);
+
+      ops_ = nullptr;
+      context_ = nullptr;
+    }
+  }
+
+  ~ExplicitFunction() {
+    if (ops_ != nullptr) {
+      ops_->destroy(context_);
+    }
+  }
+
+  // Copyable and movable, but not assignable: we don't need
+  // assignment for now, so we might as well minimise the untested bug
+  // surface.
+  ExplicitFunction(const ExplicitFunction& other)
+      : ops_(other.ops_), context_(ops_->copy(other.context_)) {}
+
+  ExplicitFunction(ExplicitFunction&& other)
+      : ops_(other.ops_), context_(other.context_) {
+    other.ops_ = nullptr;
+    other.context_ = nullptr;
+  }
+
+  ExplicitFunction& operator=(const ExplicitFunction&) = delete;
+  ExplicitFunction& operator=(ExplicitFunction&&) = delete;
+
+  // Performs some minimal tests for ABI validity between the caller
+  // and the code that generated the `Ops` vtable.
+  //
+  // Returns true if the vtable might be compatible with the caller,
+  // false if there is definite incompatibility.
+  bool IsValid() const {
+    if (ops_ == nullptr) {
+      return false;
+    }
+
+    std::function<Result(const Arg*)> expected_fn;
+    const char* expected_name = typeid(expected_fn).name();
+
+    if (ops_->size_of_result != sizeof(Result) ||
+        ops_->size_of_arg != sizeof(Arg) ||
+        std::strcmp(expected_name, ops_->function_typename) != 0) {
+      std::cerr << "ABI mismatch for << " << __PRETTY_FUNCTION__
+                << " : ops->size_of_result " << ops_->size_of_result << " VS "
+                << sizeof(Result) << ", ops->size_of_arg " << ops_->size_of_arg
+                << " VS " << sizeof(Arg) << ", ops->function_typename "
+                << ops_->function_typename << " VS " << expected_name << ".\n";
+      return false;
+    }
+
+    return true;
+  }
+
+  inline __attribute__((__always_inline__)) Result operator()(
+      const Arg* args) const {
+    auto* invoke = ops_->invoke;
+    void* context = context_;
+    // Align the indirect call to make sure it has room for branch
+    // prediction data, and insert a compiler barrier to load
+    // everything in registers before padding.
+    asm volatile(
+#if ABSL_CACHELINE_SIZE >= 128
+        ".align 128\n\t"
+#elif ABSL_CACHELINE_SIZE == 64
+        ".align 64\n\t"
+#else
+        ".align 32\n\t"
+#endif
+        : "+r"(invoke), "+r"(context), "+r"(args)::"memory");
+
+    return invoke(context, args);
+  }
+
+ private:
+  const Ops* ops_;  // Only null in invalid instances.
+  void* context_;   // Nullable.
+};
+
 struct Identity {
   void operator()() const {}
 
