@@ -31,6 +31,28 @@ cc_library(
 )
 
 cc_library(
+    name = "timing-function",
+    hdrs = ["timing-function.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":meta",
+        ":time",
+    ],
+)
+
+cc_library(
+    name = "extract-timing-function",
+    hdrs = ["extract-timing-function.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":dynamic-loading",
+        ":timing-function",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
     name = "compare-functions",
     hdrs = ["compare-functions.h"],
     visibility = ["//visibility:public"],
@@ -39,6 +61,7 @@ cc_library(
         ":meta",
         ":test-params",
         ":time",
+        ":timing-function",
         "//:prng",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/memory",
