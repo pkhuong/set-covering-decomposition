@@ -6,6 +6,7 @@ cc_library(
     hdrs = ["test-params.h"],
     visibility = ["//visibility:public"],
     deps = [
+        "@com_google_absl//absl/time",
         "@com_google_absl//absl/types:optional",
     ],
 )
@@ -148,6 +149,7 @@ cc_library(
         "//:prng",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/time",
         "@com_google_absl//absl/types:span",
     ],
 )

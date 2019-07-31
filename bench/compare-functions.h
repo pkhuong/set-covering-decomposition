@@ -65,6 +65,7 @@
 #include "absl/base/thread_annotations.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/synchronization/notification.h"
+#include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "bench/internal/constructable-array.h"
 #include "bench/internal/meta.h"
@@ -592,6 +593,7 @@ auto CompareFunctions(const TestParams& params, Generator generator,
                std::move(prep_a), std::move(fn_a), std::move(prep_b),
                std::move(fn_b), std::move(comparator));
 
+  const absl::Time deadline = absl::Now() + params.timeout;
   const uint64_t max_comparisons = params.max_comparisons;
   const uint64_t min_comparisons =
       std::max(params.min_count, stat_gen.kMinObservations);
@@ -605,6 +607,9 @@ auto CompareFunctions(const TestParams& params, Generator generator,
   };
 
   while (num_comparisons < max_comparisons) {
+    if (deadline != absl::InfiniteFuture() && absl::Now() > deadline) {
+      break;
+    }
     if (num_comparisons >= min_comparisons && analysis->Done()) {
       break;
     }
