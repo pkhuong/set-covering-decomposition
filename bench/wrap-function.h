@@ -4,7 +4,7 @@
 
 // Expands to a type that is specialised to forward calls to FN,
 // without any indirect call or jump.
-#define WRAP_FUNCTION(FN) internal::FunctionWrapper<decltype(FN), (FN)>
+#define WRAP_FUNCTION(FN) ::bench::internal::FunctionWrapper<decltype(FN), (FN)>
 
 namespace bench {
 namespace internal {
