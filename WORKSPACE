@@ -70,9 +70,9 @@ http_archive(
 
 http_archive(
     name = "martingale-cs",
-    sha256 = "474bc5306dd6c4bcada72aa55b3845722a9e63ff553188314388128e84a4a0f3",
-    strip_prefix = "martingale-cs-8747e64ccf33e823c509bdcca11c47d4524cb475",
-    urls = ["https://github.com/pkhuong/martingale-cs/archive/8747e64ccf33e823c509bdcca11c47d4524cb475.zip"],  # 2019-06-30
+    sha256 = "23a8ae5b6917aa43fb813665042e3b57a4df3b236223a6dd7dcdbfd4743545bf",
+    strip_prefix = "martingale-cs-ace480696c0d7b749824cd0b4f9ed51438a8d2e8",
+    urls = ["https://github.com/pkhuong/martingale-cs/archive/ace480696c0d7b749824cd0b4f9ed51438a8d2e8.zip"],  # 2019-07-14
 )
 
 http_archive(
