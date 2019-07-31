@@ -25,6 +25,13 @@ std::ostream& operator<<(std::ostream& out, ComparisonResult result) {
   return out;
 }
 
+TestParams StrictTestParams() {
+  TestParams ret;
+  ret.confirm_done = 0;
+  ret.retry_after_thread_cancel = false;
+  return ret;
+}
+
 TestParams& TestParams::SetLogEpsForNTests(size_t n) {
   if (n == 0) {
     log_eps = 0;
@@ -34,5 +41,4 @@ TestParams& TestParams::SetLogEpsForNTests(size_t n) {
 
   return *this;
 }
-
 }  // namespace bench
