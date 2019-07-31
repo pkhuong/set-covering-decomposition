@@ -72,6 +72,21 @@ cc_library(
 )
 
 cc_library(
+    name = "compare-libraries",
+    hdrs = ["compare-libraries.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":compare-functions",
+        ":dynamic-loading",
+        ":extract-timing-function",
+        ":meta",
+        ":test-params",
+        ":timing-function",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
     name = "sign-test",
     srcs = ["sign-test.cc"],
     hdrs = ["sign-test.h"],
@@ -131,6 +146,25 @@ cc_test(
         ":test-params",
         "@com_google_absl//absl/time",
         "@com_google_absl//absl/types:span",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "compare-libraries_test",
+    srcs = ["compare-libraries_test.cc"],
+    shard_count = 4,
+    deps = [
+        ":bounded-mean-test",
+        ":compare-libraries",
+        ":kolmogorov-smirnov-test",
+        ":libbadnop.so",
+        ":libfastnop.so",
+        ":libslownop.so",
+        ":quantile-test",
+        ":sign-test",
+        ":test-params",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],
@@ -246,6 +280,41 @@ cc_test(
         "@com_google_absl//absl/time",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_binary(
+    name = "libbadnop.so",
+    srcs = ["badnop.cc"],
+    linkshared = True,
+    linkstatic = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        ":timing-function",
+    ],
+)
+
+cc_binary(
+    name = "libfastnop.so",
+    srcs = ["fastnop.cc"],
+    # We want a self-contained .so
+    linkshared = True,
+    linkstatic = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        ":timing-function",
+    ],
+)
+
+cc_binary(
+    name = "libslownop.so",
+    srcs = ["slownop.cc"],
+    linkshared = True,
+    linkstatic = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        ":timing-function",
+        ":wrap-function",
     ],
 )
 
