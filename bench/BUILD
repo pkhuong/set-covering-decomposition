@@ -83,6 +83,30 @@ cc_test(
 )
 
 cc_library(
+    name = "kolmogorov-smirnov-test",
+    srcs = ["kolmogorov-smirnov-test.cc"],
+    hdrs = ["kolmogorov-smirnov-test.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":test-params",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/types:span",
+        "@one-sided-ks//:one-sided-ks",
+    ],
+)
+
+cc_test(
+    name = "kolmogorov-smirnov-test_test",
+    srcs = ["kolmogorov-smirnov-test_test.cc"],
+    deps = [
+        ":kolmogorov-smirnov-test",
+        ":test-params",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
     name = "time",
     srcs = ["time.cc"],
     hdrs = ["time.h"],
@@ -171,6 +195,18 @@ cc_test(
         ":compare-functions",
         ":test-params",
         "@com_google_absl//absl/types:span",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "compare-functions-kolmogorov-smirnov_test",
+    srcs = ["compare-functions-kolmogorov-smirnov_test.cc"],
+    deps = [
+        ":compare-functions",
+        ":kolmogorov-smirnov-test",
+        ":test-params",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],
