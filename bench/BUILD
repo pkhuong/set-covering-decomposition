@@ -254,3 +254,22 @@ cc_library(
         "@com_google_absl//absl/utility",
     ],
 )
+
+cc_library(
+    name = "dynamic-loading",
+    srcs = ["internal/dynamic-loading.cc"],
+    hdrs = ["internal/dynamic-loading.h"],
+    copts = select({
+        "@bazel_tools//src/conditions:darwin": ["-UDLMOPEN_AVAILABLE"],
+        "//conditions:default": [
+            "-D_GNU_SOURCE",
+            "-DDLMOPEN_AVAILABLE",
+        ],
+    }),
+    linkopts = ["-ldl"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/strings",
+    ],
+)
