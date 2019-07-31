@@ -13,6 +13,7 @@
 #include "absl/meta/type_traits.h"
 #include "absl/types/span.h"
 #include "absl/utility/utility.h"
+#include "bench/stable-unique-ptr.h"
 
 // Misc C++ metaprogramming noise for compare-functions.h
 namespace bench {
@@ -63,6 +64,9 @@ struct IsProbablyABISafe<std::tuple<T>> : public IsProbablyABISafe<T> {};
 
 template <typename T>
 struct IsProbablyABISafe<TimedResult<T>> : public IsProbablyABISafe<T> {};
+
+template <typename T>
+struct IsProbablyABISafe<StableUniquePtr<T>> : public IsProbablyABISafe<T> {};
 
 static_assert(!IsProbablyABISafe<std::tuple<int, int>>::value,
               ">1-element tuple should not be marked safe.");

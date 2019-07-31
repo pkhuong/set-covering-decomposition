@@ -1,6 +1,13 @@
 # Benchmarking utilities to perform statistical tests, esp for continuous perf testing
 
 cc_library(
+    name = "stable-unique-ptr",
+    hdrs = ["stable-unique-ptr.h"],
+    visibility = ["//visibility:public"],
+    deps = [],
+)
+
+cc_library(
     name = "time",
     srcs = ["time.cc"],
     hdrs = ["time.h"],
@@ -341,6 +348,7 @@ cc_library(
     hdrs = ["internal/meta.h"],
     visibility = ["//visibility:private"],
     deps = [
+        ":stable-unique-ptr",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/meta:type_traits",
         "@com_google_absl//absl/types:span",
