@@ -5,6 +5,7 @@
 
 #include "bench/kolmogorov-smirnov-test.h"
 #include "bench/test-params.h"
+#include "bench/wrap-function.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "prng.h"
@@ -51,7 +52,7 @@ const auto FastNop = [] {};
 // Nop will inline an immediate call to `NopCallee`, which will remain
 // out of line. That gives us a slightly more realistic A/A test case.
 __attribute__((__noinline__)) void NopCallee() { asm volatile(""); }
-const auto Nop = [] { NopCallee(); };
+const WRAP_FUNCTION(NopCallee) Nop;
 
 TEST(CompareFunctionsKSTest, FastAA) {
   KolmogorovSmirnovTest test(TestParams()

@@ -5,6 +5,7 @@
 
 #include "bench/quantile-test.h"
 #include "bench/test-params.h"
+#include "bench/wrap-function.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "prng.h"
@@ -49,7 +50,7 @@ struct Slow {
 
 const auto FastNop = [] {};
 __attribute__((__noinline__)) void NopCallee() { asm volatile(""); }
-const auto Nop = [] { NopCallee(); };
+const WRAP_FUNCTION(NopCallee) Nop;
 
 TEST(CompareFunctionsQuantileTest, FastAA) {
   QuantileTest quantiles(
