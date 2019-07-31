@@ -11,6 +11,13 @@ cc_library(
 )
 
 cc_library(
+    name = "wrap-function",
+    hdrs = ["wrap-function.h"],
+    visibility = ["//visibility:public"],
+    deps = [],
+)
+
+cc_library(
     name = "sign-test",
     srcs = ["sign-test.cc"],
     hdrs = ["sign-test.h"],
@@ -165,6 +172,7 @@ cc_test(
         ":compare-functions",
         ":sign-test",
         ":test-params",
+        ":wrap-function",
         "@com_google_absl//absl/time",
         "@com_google_absl//absl/types:span",
         "@com_google_googletest//:gtest",
@@ -180,6 +188,7 @@ cc_test(
         ":compare-functions",
         ":quantile-test",
         ":test-params",
+        ":wrap-function",
         "@com_google_absl//absl/types:span",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
@@ -194,6 +203,7 @@ cc_test(
         ":bounded-mean-test",
         ":compare-functions",
         ":test-params",
+        ":wrap-function",
         "@com_google_absl//absl/types:span",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
@@ -207,6 +217,7 @@ cc_test(
         ":compare-functions",
         ":kolmogorov-smirnov-test",
         ":test-params",
+        ":wrap-function",
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],

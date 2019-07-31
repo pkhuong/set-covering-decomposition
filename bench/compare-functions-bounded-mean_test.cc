@@ -4,6 +4,7 @@
 
 #include "bench/bounded-mean-test.h"
 #include "bench/test-params.h"
+#include "bench/wrap-function.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
@@ -14,7 +15,7 @@ using ::testing::Ne;
 
 const auto FastNop = [] {};
 __attribute__((__noinline__)) void NopCallee() { asm volatile(""); }
-const auto Nop = [] { NopCallee(); };
+const WRAP_FUNCTION(NopCallee) Nop;
 
 TEST(CompareFunctionsBoundedMeanTest, FastAA) {
   BoundedMeanTest test(TestParams()

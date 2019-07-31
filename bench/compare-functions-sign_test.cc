@@ -7,6 +7,7 @@
 #include "absl/types/span.h"
 #include "bench/sign-test.h"
 #include "bench/test-params.h"
+#include "bench/wrap-function.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
@@ -18,7 +19,7 @@ const auto FastNop = [] {};
 // introduces a bit more noise, but we should still get a useful
 // result.
 __attribute__((__noinline__)) void NopCallee() { asm volatile(""); }
-const auto Nop = [] { NopCallee(); };
+const WRAP_FUNCTION(NopCallee) Nop;
 
 TEST(CompareFunctionsSignTest, FastAA) {
   SignTest test(TestParams().SetMaxComparisons(10000000).SetNumThreads(1));

@@ -219,6 +219,13 @@ class StatisticGenerator {
                                          std::declval<FnBResult>())),
           std::declval<GenResult>())));
 
+  static_assert(!IsFunctionType<FnA>::value,
+                "Timed functions should not be late-bound function types. Use "
+                "WRAP_FUNCTION.");
+  static_assert(!IsFunctionType<FnB>::value,
+                "Timed functions should not be late-bound function types. Use "
+                "WRAP_FUNCTION.");
+
  public:
   // Accumulate results for ~1 billion cycles worth of work.
   static constexpr uint64_t kTargetCyclePerRun = 1000 * 1000 * 1000ULL;

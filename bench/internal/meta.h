@@ -1,6 +1,8 @@
 #ifndef BENCH_META_H
 #define BENCH_META_H
+#include <functional>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 
 #include "absl/base/macros.h"
@@ -122,6 +124,30 @@ __attribute__((__noinline__)) bool AllInOrder(
 
   return true;
 }
+
+template <typename T>
+struct IsFunctionTypeHelper {
+  static constexpr bool value = false;
+};
+
+template <typename R, typename... Args>
+struct IsFunctionTypeHelper<std::function<R(Args...)>> {
+  static constexpr bool value = true;
+};
+
+template <typename R, typename... Args>
+struct IsFunctionTypeHelper<R(Args...)> {
+  static constexpr bool value = true;
+};
+
+template <typename R, typename... Args>
+struct IsFunctionTypeHelper<R (*)(Args...)> {
+  static constexpr bool value = true;
+};
+
+template <typename T>
+struct IsFunctionType : public IsFunctionTypeHelper<typename std::remove_cv<
+                            typename std::remove_reference<T>::type>::type> {};
 }  // namespace internal
 }  // namespace bench
 #endif /* !BENCH_META_H */
