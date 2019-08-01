@@ -379,6 +379,10 @@ StatisticGenerator<Generator, FnA, FnB, Comparator>::Start(size_t num_threads) {
 template <typename Generator, typename FnA, typename FnB, typename Comparator>
 __attribute__((__noinline__)) void
 StatisticGenerator<Generator, FnA, FnB, Comparator>::Stop() {
+  for (auto& worker : workers_) {
+    worker.Cancel();
+  }
+
   workers_.clear();
 }
 
