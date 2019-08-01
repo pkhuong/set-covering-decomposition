@@ -16,6 +16,7 @@ extern "C" {
 
 #include "absl/base/casts.h"
 #include "absl/memory/memory.h"
+#include "absl/strings/string_view.h"
 
 #ifndef MAP_HUGETLB
 #define MAP_HUGETLB 0x40
@@ -128,20 +129,20 @@ DLCloser::~DLCloser() {
   handle_ = nullptr;
 }
 
-std::pair<void *, DLCloser> DLMOpenOrDie(absl::string_view file,
-                                         absl::string_view symbol,
+std::pair<void *, DLCloser> DLMOpenOrDie(const std::string &file,
+                                         const std::string &symbol,
                                          const OpenOptions &options) {
   const char *name;
   void *handle;
 #ifdef DLMOPEN_AVAILABLE
   if (options.dlmopen) {
     name = "dlmopen";
-    handle = dlmopen(LM_ID_NEWLM, file.data(), RTLD_LOCAL | RTLD_NOW);
+    handle = dlmopen(LM_ID_NEWLM, file.c_str(), RTLD_LOCAL | RTLD_NOW);
   } else
 #endif
   {
     name = "dlopen";
-    handle = dlopen(file.data(), RTLD_LOCAL | RTLD_NOW);
+    handle = dlopen(file.c_str(), RTLD_LOCAL | RTLD_NOW);
   }
 
   if (handle == nullptr) {
@@ -149,7 +150,7 @@ std::pair<void *, DLCloser> DLMOpenOrDie(absl::string_view file,
     abort();
   }
 
-  void *fn_ptr = dlsym(handle, symbol.data());
+  void *fn_ptr = dlsym(handle, symbol.c_str());
   if (fn_ptr == nullptr) {
     std::cerr << "dlsym(" << symbol << ") failed in " << file << ": "
               << dlerror() << std::endl;
@@ -162,16 +163,16 @@ std::pair<void *, DLCloser> DLMOpenOrDie(absl::string_view file,
   return std::make_pair(fn_ptr, DLCloser(handle));
 }
 
-std::pair<void *, DLCloser> DLOpenOrDie(absl::string_view file,
-                                        absl::string_view symbol,
+std::pair<void *, DLCloser> DLOpenOrDie(const std::string &file,
+                                        const std::string &symbol,
                                         const OpenOptions &options) {
-  void *handle = dlopen(file.data(), RTLD_LOCAL | RTLD_NOW);
+  void *handle = dlopen(file.c_str(), RTLD_LOCAL | RTLD_NOW);
   if (handle == nullptr) {
     std::cerr << "dlopen(" << file << ") failed: " << dlerror() << std::endl;
     abort();
   }
 
-  void *fn_ptr = dlsym(handle, symbol.data());
+  void *fn_ptr = dlsym(handle, symbol.c_str());
   if (fn_ptr == nullptr) {
     std::cerr << "dlsym(" << symbol << ") failed in " << file << ": "
               << dlerror() << std::endl;

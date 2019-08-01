@@ -1,9 +1,9 @@
 #ifndef BENCH_INTERNAL_DYNAMIC_LOADING_H
 #define BENCH_INTERNAL_DYNAMIC_LOADING_H
+#include <string>
 #include <utility>
 
 #include "absl/base/macros.h"
-#include "absl/strings/string_view.h"
 
 namespace bench {
 namespace internal {
@@ -60,7 +60,7 @@ struct OpenOptions {
 //
 // Dies noisily on failure.
 std::pair<void *, DLCloser> DLMOpenOrDie(
-    absl::string_view file, absl::string_view symbol,
+    const std::string &file, const std::string &symbol,
     const OpenOptions &options = OpenOptions());
 
 // Attempts to `dlopen(3)` `file`, and looks for `symbol` (which must
@@ -75,7 +75,7 @@ std::pair<void *, DLCloser> DLMOpenOrDie(
 // calling environment's C++ symbols.  Ideally, the interfaces should
 // be re-worked to remove that requirement.
 std::pair<void *, DLCloser> DLOpenOrDie(
-    absl::string_view file, absl::string_view symbol,
+    const std::string &file, const std::string &symbol,
     const OpenOptions &options = OpenOptions());
 
 // Hide the deprecated function in another template that's
@@ -106,7 +106,7 @@ struct OpenOrDie;
 template <>
 struct OpenOrDie<true, void (*)()> {
   std::pair<void *, DLCloser> operator()(
-      absl::string_view file, absl::string_view symbol,
+      const std::string &file, const std::string &symbol,
       const OpenOptions &options = OpenOptions()) {
     return DLMOpenOrDie(file, symbol, options);
   }
@@ -115,7 +115,7 @@ struct OpenOrDie<true, void (*)()> {
 template <>
 struct OpenOrDie<false, void (*)()> {
   std::pair<void *, DLCloser> operator()(
-      absl::string_view file, absl::string_view symbol,
+      const std::string &file, const std::string &symbol,
       const OpenOptions &options = OpenOptions()) {
     return DLOpenOrDie(file, symbol, options);
   }

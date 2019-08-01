@@ -1,11 +1,11 @@
 #ifndef BENCH_COMPARE_LIBRARIES_H
 #define BENCH_COMPARE_LIBRARIES_H
 #include <ostream>
+#include <string>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 
-#include "absl/strings/string_view.h"
 #include "bench/compare-functions.h"
 #include "bench/extract-timing-function.h"
 #include "bench/internal/dynamic-loading.h"
@@ -30,11 +30,10 @@ namespace bench {
 // function to call to get the result of `MakeTimingFunction`.
 template <typename ResultType = std::tuple<>, typename Generator,
           typename Comparator, typename Analysis>
-auto CompareLibraries(
-    const TestParams& params, Generator generator,
-    std::pair<absl::string_view, absl::string_view> path_fun_a,
-    std::pair<absl::string_view, absl::string_view> path_fun_b,
-    Comparator comparator, Analysis* analysis)
+auto CompareLibraries(const TestParams& params, Generator generator,
+                      const std::pair<std::string, std::string>& path_fun_a,
+                      const std::pair<std::string, std::string>& path_fun_b,
+                      Comparator comparator, Analysis* analysis)
     -> decltype(analysis->Summary(std::declval<std::ostream*>())) {
   using GenResult =
       decltype(internal::CallAndTuplify()(generator, std::make_tuple()));
@@ -53,11 +52,10 @@ auto CompareLibraries(
 // In this overload, `analysis->params()` provides the test parameters.
 template <typename ResultType = std::tuple<>, typename Generator,
           typename Comparator, typename Analysis>
-auto CompareLibraries(
-    Generator generator,
-    std::pair<absl::string_view, absl::string_view> path_fun_a,
-    std::pair<absl::string_view, absl::string_view> path_fun_b,
-    Comparator comparator, Analysis* analysis) ->
+auto CompareLibraries(Generator generator,
+                      const std::pair<std::string, std::string>& path_fun_a,
+                      const std::pair<std::string, std::string>& path_fun_b,
+                      Comparator comparator, Analysis* analysis) ->
     typename std::enable_if<
         !std::is_same<Generator, TestParams>::value,
         decltype(analysis->Summary(std::declval<std::ostream*>()))>::type {
@@ -79,11 +77,10 @@ auto CompareLibraries(
 // and `analysis->comparator()` the comparator.
 template <typename ResultType = std::tuple<>, typename Generator,
           typename Analysis>
-auto CompareLibraries(
-    Generator generator,
-    std::pair<absl::string_view, absl::string_view> path_fun_a,
-    std::pair<absl::string_view, absl::string_view> path_fun_b,
-    Analysis* analysis) ->
+auto CompareLibraries(Generator generator,
+                      const std::pair<std::string, std::string>& path_fun_a,
+                      const std::pair<std::string, std::string>& path_fun_b,
+                      Analysis* analysis) ->
     typename std::enable_if<
         !std::is_same<Generator, TestParams>::value,
         decltype(analysis->Summary(std::declval<std::ostream*>()))>::type {
@@ -104,10 +101,9 @@ auto CompareLibraries(
 // This overloaded uses a temporary instance of its explicit `Analysis` type.
 template <typename Analysis, typename ResultType = std::tuple<>,
           typename Generator>
-auto CompareLibraries(
-    const TestParams& params, Generator generator,
-    std::pair<absl::string_view, absl::string_view> path_fun_a,
-    std::pair<absl::string_view, absl::string_view> path_fun_b)
+auto CompareLibraries(const TestParams& params, Generator generator,
+                      const std::pair<std::string, std::string>& path_fun_a,
+                      const std::pair<std::string, std::string>& path_fun_b)
     -> decltype(
         Analysis(params), std::declval<Analysis>().comparator(),
         std::declval<Analysis>().Done(),

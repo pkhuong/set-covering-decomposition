@@ -90,7 +90,6 @@ cc_library(
         ":meta",
         ":test-params",
         ":timing-function",
-        "@com_google_absl//absl/strings",
     ],
 )
 

@@ -19,8 +19,8 @@ namespace bench {
 // This function dies noisily on error.
 template <typename ResultType, typename GenResult>
 std::pair<TimingFunction<ResultType, void, GenResult>, internal::DLCloser>
-ExtractTimingFunction(absl::string_view shared_object_path,
-                      absl::string_view function_name) {
+ExtractTimingFunction(const std::string& shared_object_path,
+                      const std::string& function_name) {
   using FnRet = TimingFunction<ResultType, void, GenResult>;
   static constexpr bool kIsProbablyABISafe = FnRet::kIsProbablyABISafe;
 
