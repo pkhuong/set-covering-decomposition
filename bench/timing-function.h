@@ -3,10 +3,12 @@
 #include "bench/internal/meta.h"
 #include "bench/time.h"
 
-#define DEFINE_MAKE_TIMING_FUNCTION(NAME, Generator, ...)                  \
-  extern "C" decltype(::bench::MakeTimingFunction<Generator>(__VA_ARGS__)) \
-  NAME() {                                                                 \
-    return ::bench::MakeTimingFunction<Generator>(__VA_ARGS__);            \
+#define TIMING_FUNCTION_HUGE_PAGE_SIZE (1UL << 21)
+
+#define DEFINE_MAKE_TIMING_FUNCTION(NAME, Generator, ...)                   \
+  extern "C" decltype(::bench::MakeTimingFunction<Generator>(__VA_ARGS__))  \
+      __attribute__((__aligned__(TIMING_FUNCTION_HUGE_PAGE_SIZE))) NAME() { \
+    return ::bench::MakeTimingFunction<Generator>(__VA_ARGS__);             \
   }
 
 namespace bench {
