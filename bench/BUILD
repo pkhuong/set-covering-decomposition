@@ -371,6 +371,7 @@ cc_library(
     visibility = ["//visibility:private"],
     deps = [
         "@com_google_absl//absl/base",
+        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
     ],
 )

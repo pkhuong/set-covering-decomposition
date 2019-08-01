@@ -31,23 +31,52 @@ class DLCloser {
   void *handle_;
 };
 
+struct OpenOptions {
+  bool remap{true};
+  bool dlmopen{false};
+
+  // If true, the dynamic loading code will attempt to remap the code
+  // to test with huge pages.
+  OpenOptions &SetRemap(bool value) {
+    remap = value;
+    return *this;
+  }
+
+  // If true, the dynamic loading code will hermetically load code
+  // with dlmopen.  This provides more isolation (we don't inherit the
+  // timing harness's libc or stdlibc++), but crash prone because libc
+  // becomes *really* confused when it's loaded multiple times.
+  OpenOptions &SetDLMOpen(bool value) {
+    dlmopen = value;
+    return *this;
+  }
+};
+
 // Attempts to `dlmopen(3)` `file`, and looks for `symbol` (which must
 // be correctly name-mangled) in that shared object.
 //
+// If `remap` is true, attempt to remap the .text section with huge
+// pages.
+//
 // Dies noisily on failure.
-std::pair<void *, DLCloser> DLMOpenOrDie(absl::string_view file,
-                                         absl::string_view symbol);
+std::pair<void *, DLCloser> DLMOpenOrDie(
+    absl::string_view file, absl::string_view symbol,
+    const OpenOptions &options = OpenOptions());
 
 // Attempts to `dlopen(3)` `file`, and looks for `symbol` (which must
 // be correctly name-mangled) in that shared object.
+//
+// If `remap` is true, attempt to remap the .text section with huge
+// pages.
 //
 // Dies noisily on failure.
 //
 // This function should only be called if the `symbol` must re-use the
 // calling environment's C++ symbols.  Ideally, the interfaces should
 // be re-worked to remove that requirement.
-std::pair<void *, DLCloser> DLOpenOrDie(absl::string_view file,
-                                        absl::string_view symbol);
+std::pair<void *, DLCloser> DLOpenOrDie(
+    absl::string_view file, absl::string_view symbol,
+    const OpenOptions &options = OpenOptions());
 
 // Hide the deprecated function in another template that's
 // instantiated with a non-specialised template argument to make the
@@ -76,17 +105,19 @@ struct OpenOrDie;
 
 template <>
 struct OpenOrDie<true, void (*)()> {
-  std::pair<void *, DLCloser> operator()(absl::string_view file,
-                                         absl::string_view symbol) {
-    return DLMOpenOrDie(file, symbol);
+  std::pair<void *, DLCloser> operator()(
+      absl::string_view file, absl::string_view symbol,
+      const OpenOptions &options = OpenOptions()) {
+    return DLMOpenOrDie(file, symbol, options);
   }
 };
 
 template <>
 struct OpenOrDie<false, void (*)()> {
-  std::pair<void *, DLCloser> operator()(absl::string_view file,
-                                         absl::string_view symbol) {
-    return DLOpenOrDie(file, symbol);
+  std::pair<void *, DLCloser> operator()(
+      absl::string_view file, absl::string_view symbol,
+      const OpenOptions &options = OpenOptions()) {
+    return DLOpenOrDie(file, symbol, options);
   }
 };
 }  // namespace internal
