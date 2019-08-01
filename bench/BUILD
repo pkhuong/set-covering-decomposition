@@ -3,6 +3,7 @@
 cc_library(
     name = "stable-unique-ptr",
     hdrs = ["stable-unique-ptr.h"],
+    linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [],
 )
@@ -11,6 +12,7 @@ cc_library(
     name = "time",
     srcs = ["time.cc"],
     hdrs = ["time.h"],
+    linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
         "@com_google_absl//absl/algorithm:container",
@@ -23,6 +25,7 @@ cc_library(
     name = "test-params",
     srcs = ["test-params.cc"],
     hdrs = ["test-params.h"],
+    linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
         "@com_google_absl//absl/time",
@@ -33,6 +36,7 @@ cc_library(
 cc_library(
     name = "wrap-function",
     hdrs = ["wrap-function.h"],
+    linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [],
 )
@@ -40,6 +44,7 @@ cc_library(
 cc_library(
     name = "timing-function",
     hdrs = ["timing-function.h"],
+    linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
         ":meta",
@@ -50,6 +55,7 @@ cc_library(
 cc_library(
     name = "extract-timing-function",
     hdrs = ["extract-timing-function.h"],
+    linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
         ":dynamic-loading",
@@ -62,6 +68,7 @@ cc_library(
 cc_library(
     name = "compare-functions",
     hdrs = ["compare-functions.h"],
+    linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
         ":constructable-array",
@@ -82,6 +89,7 @@ cc_library(
 cc_library(
     name = "compare-libraries",
     hdrs = ["compare-libraries.h"],
+    linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
         ":compare-functions",
@@ -97,6 +105,7 @@ cc_library(
     name = "sign-test",
     srcs = ["sign-test.cc"],
     hdrs = ["sign-test.h"],
+    linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
         ":test-params",
@@ -109,6 +118,7 @@ cc_library(
     name = "quantile-test",
     srcs = ["quantile-test.cc"],
     hdrs = ["quantile-test.h"],
+    linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
         ":test-params",
@@ -123,6 +133,7 @@ cc_library(
     name = "bounded-mean-test",
     srcs = ["bounded-mean-test.cc"],
     hdrs = ["bounded-mean-test.h"],
+    linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
         ":test-params",
@@ -136,6 +147,7 @@ cc_library(
     name = "kolmogorov-smirnov-test",
     srcs = ["kolmogorov-smirnov-test.cc"],
     hdrs = ["kolmogorov-smirnov-test.h"],
+    linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
         ":test-params",
@@ -148,6 +160,7 @@ cc_library(
 cc_test(
     name = "compare-functions_test",
     srcs = ["compare-functions_test.cc"],
+    linkstatic = True,
     deps = [
         ":compare-functions",
         ":test-params",
@@ -161,6 +174,7 @@ cc_test(
 cc_test(
     name = "compare-libraries_test",
     srcs = ["compare-libraries_test.cc"],
+    linkstatic = True,
     shard_count = 4,
     deps = [
         ":bounded-mean-test",
@@ -180,6 +194,7 @@ cc_test(
 cc_test(
     name = "compare-functions-sign_test",
     srcs = ["compare-functions-sign_test.cc"],
+    linkstatic = True,
     deps = [
         ":compare-functions",
         ":sign-test",
@@ -196,6 +211,7 @@ cc_test(
     name = "compare-functions-quantile_test",
     size = "large",
     srcs = ["compare-functions-quantile_test.cc"],
+    linkstatic = True,
     deps = [
         ":compare-functions",
         ":quantile-test",
@@ -211,6 +227,7 @@ cc_test(
     name = "compare-functions-bounded-mean_test",
     size = "large",
     srcs = ["compare-functions-bounded-mean_test.cc"],
+    linkstatic = True,
     deps = [
         ":bounded-mean-test",
         ":compare-functions",
@@ -225,6 +242,7 @@ cc_test(
 cc_test(
     name = "compare-functions-kolmogorov-smirnov_test",
     srcs = ["compare-functions-kolmogorov-smirnov_test.cc"],
+    linkstatic = True,
     deps = [
         ":compare-functions",
         ":kolmogorov-smirnov-test",
@@ -238,6 +256,7 @@ cc_test(
 cc_test(
     name = "sign-test_test",
     srcs = ["sign-test_test.cc"],
+    linkstatic = True,
     deps = [
         ":sign-test",
         ":test-params",
@@ -249,6 +268,7 @@ cc_test(
 cc_test(
     name = "quantile-test_test",
     srcs = ["quantile-test_test.cc"],
+    linkstatic = True,
     deps = [
         ":quantile-test",
         ":test-params",
@@ -260,6 +280,7 @@ cc_test(
 cc_test(
     name = "bounded-mean-test_test",
     srcs = ["bounded-mean-test_test.cc"],
+    linkstatic = True,
     deps = [
         ":bounded-mean-test",
         ":test-params",
@@ -271,6 +292,7 @@ cc_test(
 cc_test(
     name = "kolmogorov-smirnov-test_test",
     srcs = ["kolmogorov-smirnov-test_test.cc"],
+    linkstatic = True,
     deps = [
         ":kolmogorov-smirnov-test",
         ":test-params",
@@ -282,6 +304,7 @@ cc_test(
 cc_test(
     name = "time_test",
     srcs = ["time_test.cc"],
+    linkstatic = True,
     deps = [
         ":time",
         "@com_google_absl//absl/time",
@@ -328,6 +351,7 @@ cc_binary(
 cc_library(
     name = "constructable-array",
     hdrs = ["internal/constructable-array.h"],
+    linkstatic = True,
     visibility = ["//visibility:private"],
     deps = [],
 )
@@ -335,6 +359,7 @@ cc_library(
 cc_test(
     name = "constructable-array_test",
     srcs = ["internal/constructable-array_test.cc"],
+    linkstatic = True,
     deps = [
         ":constructable-array",
         "@com_google_googletest//:gtest",
@@ -345,6 +370,7 @@ cc_test(
 cc_library(
     name = "meta",
     hdrs = ["internal/meta.h"],
+    linkstatic = True,
     visibility = ["//visibility:private"],
     deps = [
         ":stable-unique-ptr",
@@ -367,6 +393,7 @@ cc_library(
         ],
     }),
     linkopts = ["-ldl"],
+    linkstatic = True,
     visibility = ["//visibility:private"],
     deps = [
         "@com_google_absl//absl/base",
@@ -379,6 +406,7 @@ cc_library(
     name = "pooled-thread",
     srcs = ["internal/pooled-thread.cc"],
     hdrs = ["internal/pooled-thread.h"],
+    linkstatic = True,
     visibility = ["//visibility:private"],
     deps = [
         "@com_google_absl//absl/base",
@@ -389,6 +417,7 @@ cc_library(
 cc_test(
     name = "pooled-thread_test",
     srcs = ["internal/pooled-thread_test.cc"],
+    linkstatic = True,
     deps = [
         ":pooled-thread",
         "@com_google_absl//absl/base",

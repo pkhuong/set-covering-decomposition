@@ -1,6 +1,7 @@
 cc_library(
     name = "find-min-value-interface",
     hdrs = ["find-min-value.h"],
+    linkstatic = True,
     deps = [
         "//bench:stable-unique-ptr",
         "@com_google_absl//absl/types:span",

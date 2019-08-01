@@ -33,6 +33,7 @@ compilation_database(
 cc_binary(
     name = "random-set-cover",
     srcs = ["random-set-cover.cc"],
+    linkstatic = True,
     deps = [
         ":driver",
         ":random-set-cover-flags",
@@ -67,6 +68,7 @@ cc_binary(
         ],
         "//conditions:default": [],
     }),
+    linkstatic = True,
     deps = select({
         ":gui": [
             ":driver",
@@ -89,6 +91,7 @@ cc_library(
     name = "random-set-cover-flags",
     srcs = ["random-set-cover-flags.cc"],
     hdrs = ["random-set-cover-flags.h"],
+    linkstatic = True,
     deps = [
         "@com_google_absl//absl/flags:flag",
     ],
@@ -98,6 +101,7 @@ cc_library(
     name = "random-set-cover-instance",
     srcs = ["random-set-cover-instance.cc"],
     hdrs = ["random-set-cover-instance.h"],
+    linkstatic = True,
     deps = [
         ":cover-constraint",
     ],
@@ -107,6 +111,7 @@ cc_library(
     name = "set-cover-solver",
     srcs = ["set-cover-solver.cc"],
     hdrs = ["set-cover-solver.h"],
+    linkstatic = True,
     deps = [
         ":cover-constraint",
         ":driver",
@@ -121,6 +126,7 @@ cc_library(
     name = "solution-stats",
     srcs = ["solution-stats.cc"],
     hdrs = ["solution-stats.h"],
+    linkstatic = True,
     deps = [
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
@@ -131,6 +137,7 @@ cc_library(
     name = "driver",
     srcs = ["driver.cc"],
     hdrs = ["driver.h"],
+    linkstatic = True,
     deps = [
         ":big-vec",
         ":cover-constraint",
@@ -143,6 +150,7 @@ cc_library(
 cc_test(
     name = "driver_test",
     srcs = ["driver_test.cc"],
+    linkstatic = True,
     deps = [
         ":driver",
         "@com_google_googletest//:gtest_main",
@@ -153,6 +161,7 @@ cc_library(
     name = "cover-constraint",
     srcs = ["cover-constraint.cc"],
     hdrs = ["cover-constraint.h"],
+    linkstatic = True,
     deps = [
         ":vec",
         "@com_google_absl//absl/algorithm:container",
@@ -166,6 +175,7 @@ cc_library(
 cc_test(
     name = "cover-constraint_test",
     srcs = ["cover-constraint_test.cc"],
+    linkstatic = True,
     deps = [
         ":cover-constraint",
         "@com_google_googletest//:gtest_main",
@@ -176,6 +186,7 @@ cc_library(
     name = "knapsack-impl",
     srcs = ["knapsack-impl.cc"],
     hdrs = ["knapsack-impl.h"],
+    linkstatic = True,
     deps = [
         ":big-vec",
         ":prng",
@@ -188,6 +199,7 @@ cc_library(
 cc_test(
     name = "knapsack-impl_test",
     srcs = ["knapsack-impl_test.cc"],
+    linkstatic = True,
     deps = [
         ":knapsack-impl",
         "@com_google_googletest//:gtest",
@@ -199,6 +211,7 @@ cc_library(
     name = "knapsack",
     srcs = ["knapsack.cc"],
     hdrs = ["knapsack.h"],
+    linkstatic = True,
     deps = [
         ":big-vec",
         ":knapsack-impl",
@@ -210,6 +223,7 @@ cc_library(
 cc_test(
     name = "knapsack_test",
     srcs = ["knapsack_test.cc"],
+    linkstatic = True,
     deps = [
         ":knapsack",
         "@com_google_googletest//:gtest",
@@ -229,6 +243,7 @@ cc_library(
         "-march=native",
         "-mtune=native",
     ],
+    linkstatic = True,
     visibility = ["//:__subpackages__"],
     deps = [
         "@com_google_absl//absl/types:span",
@@ -239,6 +254,7 @@ cc_library(
     name = "prng",
     srcs = ["prng.cc"],
     hdrs = ["prng.h"],
+    linkstatic = True,
     visibility = ["//:__subpackages__"],
     deps = [
         "@com_google_absl//absl/base:core_headers",
@@ -251,6 +267,7 @@ cc_library(
     name = "big-vec",
     srcs = ["big-vec.cc"],
     hdrs = ["big-vec.h"],
+    linkstatic = True,
     deps = [
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:flat_hash_map",
