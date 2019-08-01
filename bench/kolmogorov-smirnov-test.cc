@@ -56,28 +56,41 @@ std::vector<std::pair<double, double>> CountsToCdf(
 }
 
 // Returns the location loc that minimises cdf_x[loc] -
-// cdf_y[loc + offset], along with that difference.
+// cdf_(y + offset)[loc] = cdf_y[loc - offset], along with that
+// difference.
 //
 // If the delta is positive, x is always lower than y + offset.
 // If the delta is negative, x is sometimes higher than y + offset.
 //
 // Skips the max `min_outlier_ratio` values.  Differences in the tail
-// that far is usually just noise.
+// that far are usually just noise.
 std::pair<double, double> OneSidedDistributionDistance(
     absl::Span<const std::pair<double, double>> x_cdf,
     absl::Span<const std::pair<double, double>> y_cdf, double offset,
     double min_outlier_ratio) {
-  const auto cmp_first = [offset](double x,
-                                  const std::pair<double, double>& y) {
-    return x < y.first + offset;
-  };
+  const auto cmp_first = [offset](const std::pair<double, double>& y,
+                                  double x) { return y.first + offset < x; };
 
+  const double max_cumulative_freq = 1.0 - min_outlier_ratio;
   double best_loc = 0.0;
   double best_delta = std::numeric_limits<double>::infinity();
   for (const auto& entry : x_cdf) {
+    // We don't really care what happens here. Either y has less mass
+    // here, so we'd find a positive delta, and it doesn't matter how
+    // positive it is (we cap the delta to be non-negative), or y has
+    // more mass, but that means it's all outliers and we shouldn't
+    // care about them.
+    if (entry.second >= max_cumulative_freq) {
+      break;
+    }
+
+    // We want the mass in y that's strictly less than x - offset.
+    // There's no difference in continuous distributions, but, in our
+    // discrete world, we want to know how much more mass y has at
+    // values definitely lower than x - offset.
     double y_probability;
     {
-      auto it = absl::c_upper_bound(y_cdf, entry.first, cmp_first);
+      auto it = absl::c_lower_bound(y_cdf, entry.first, cmp_first);
       if (it == y_cdf.begin()) {
         y_probability = 0.0;
       } else {
@@ -90,10 +103,6 @@ std::pair<double, double> OneSidedDistributionDistance(
     if (delta < best_delta) {
       best_loc = entry.first;
       best_delta = delta;
-    }
-
-    if (entry.second >= 1.0 - min_outlier_ratio) {
-      break;
     }
   }
 

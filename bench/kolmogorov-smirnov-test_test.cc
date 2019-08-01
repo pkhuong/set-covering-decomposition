@@ -102,11 +102,11 @@ TEST(KSTest, Lower) {
   std::mt19937 rng(dev());
 
   std::uniform_int_distribution<uint64_t> u_a(0, 10);
-  std::uniform_int_distribution<uint64_t> u_b(0, 12);
+  std::uniform_int_distribution<uint64_t> u_b(3, 13);
 
   KolmogorovSmirnovTest test(TestParams().SetMinEffect(1).SetMinCount(1000));
   const auto comparator = test.comparator();
-  for (size_t i = 0; i < 1000; ++i) {
+  for (size_t i = 0; i < 100000; ++i) {
     for (size_t j = 0; j < 1000; ++j) {
       const std::pair<double, double> cmps[] = {
           comparator(std::make_tuple(u_a(rng)), std::make_tuple(u_b(rng))),
@@ -128,13 +128,13 @@ TEST(KSTest, Higher) {
   std::random_device dev;
   std::mt19937 rng(dev());
 
-  std::uniform_int_distribution<uint64_t> u_a(0, 12);
+  std::uniform_int_distribution<uint64_t> u_a(3, 13);
   std::uniform_int_distribution<uint64_t> u_b(0, 10);
 
   KolmogorovSmirnovTest test(
       TestParams().SetMinEffect(1).SetMinDfEffect(1e-2).SetMinCount(1000));
   const auto comparator = test.comparator();
-  for (size_t i = 0; i < 10000; ++i) {
+  for (size_t i = 0; i < 100000; ++i) {
     for (size_t j = 0; j < 1000; ++j) {
       const std::pair<double, double> cmps[] = {
           comparator(std::make_tuple(u_a(rng)), std::make_tuple(u_b(rng))),
@@ -157,8 +157,8 @@ TEST(KSTest, Different) {
   std::random_device dev;
   std::mt19937 rng(dev());
 
-  std::uniform_int_distribution<uint64_t> u_a(0, 12);
-  std::uniform_int_distribution<uint64_t> u_b(2, 10);
+  std::uniform_int_distribution<uint64_t> u_a(0, 13);
+  std::uniform_int_distribution<uint64_t> u_b(3, 10);
 
   KolmogorovSmirnovTest test(
       TestParams().SetMinEffect(1).SetMinDfEffect(1e-2).SetMinCount(1000));
