@@ -97,7 +97,8 @@ TEST(CompareLibraries, SignTestManyBadAA) {
         FastNop, {"bench/libbadnop.so", "MakeNop"},
         {"bench/libbadnop.so", "MakeNop"}, &test);
     EXPECT_EQ(result, test.Summary());
-    EXPECT_EQ(result.result, ComparisonResult::kTie);
+    EXPECT_THAT(result.result,
+                AnyOf(ComparisonResult::kTie, ComparisonResult::kInconclusive));
   }
 }
 }  // namespace
