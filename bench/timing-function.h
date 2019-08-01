@@ -7,7 +7,8 @@
 
 #define DEFINE_MAKE_TIMING_FUNCTION(NAME, Generator, ...)                   \
   extern "C" decltype(::bench::MakeTimingFunction<Generator>(__VA_ARGS__))  \
-      __attribute__((__aligned__(TIMING_FUNCTION_HUGE_PAGE_SIZE))) NAME() { \
+      __attribute__((__visibility__("default"),                             \
+                     __aligned__(TIMING_FUNCTION_HUGE_PAGE_SIZE))) NAME() { \
     return ::bench::MakeTimingFunction<Generator>(__VA_ARGS__);             \
   }
 
