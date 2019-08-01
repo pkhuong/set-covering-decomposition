@@ -113,12 +113,11 @@ void PooledThread::Impl::Cancel() {
 
 void PooledThread::Impl::Join() {
   absl::MutexLock ml(&mu_);
-  if (state_ == State::kIdle) {
-    return;
-  }
-
   mu_.Await(absl::Condition(
-      +[](State* state) { return *state == State::kDone; }, &state_));
+      +[](State* state) {
+        return *state == State::kIdle || *state == State::kDone;
+      },
+      &state_));
   state_ = State::kIdle;
 }
 
