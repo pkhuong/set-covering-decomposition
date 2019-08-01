@@ -33,6 +33,7 @@ compilation_database(
 cc_binary(
     name = "random-set-cover",
     srcs = ["random-set-cover.cc"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     deps = [
         ":driver",
@@ -52,6 +53,7 @@ cc_binary(
         ":gui": ["visualizer.cc"],
         "//conditions:default": ["dummy-visualizer.c"],
     }),
+    copts = ["-fvisibility=hidden"],
     linkopts = select({
         ":osx_gui": [
             "-framework OpenGL",
@@ -91,6 +93,7 @@ cc_library(
     name = "random-set-cover-flags",
     srcs = ["random-set-cover-flags.cc"],
     hdrs = ["random-set-cover-flags.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     deps = [
         "@com_google_absl//absl/flags:flag",
@@ -101,6 +104,7 @@ cc_library(
     name = "random-set-cover-instance",
     srcs = ["random-set-cover-instance.cc"],
     hdrs = ["random-set-cover-instance.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     deps = [
         ":cover-constraint",
@@ -111,6 +115,7 @@ cc_library(
     name = "set-cover-solver",
     srcs = ["set-cover-solver.cc"],
     hdrs = ["set-cover-solver.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     deps = [
         ":cover-constraint",
@@ -126,6 +131,7 @@ cc_library(
     name = "solution-stats",
     srcs = ["solution-stats.cc"],
     hdrs = ["solution-stats.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     deps = [
         "@com_google_absl//absl/strings:str_format",
@@ -137,6 +143,7 @@ cc_library(
     name = "driver",
     srcs = ["driver.cc"],
     hdrs = ["driver.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     deps = [
         ":big-vec",
@@ -150,6 +157,7 @@ cc_library(
 cc_test(
     name = "driver_test",
     srcs = ["driver_test.cc"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     deps = [
         ":driver",
@@ -161,6 +169,7 @@ cc_library(
     name = "cover-constraint",
     srcs = ["cover-constraint.cc"],
     hdrs = ["cover-constraint.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     deps = [
         ":vec",
@@ -186,6 +195,7 @@ cc_library(
     name = "knapsack-impl",
     srcs = ["knapsack-impl.cc"],
     hdrs = ["knapsack-impl.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     deps = [
         ":big-vec",
@@ -211,6 +221,7 @@ cc_library(
     name = "knapsack",
     srcs = ["knapsack.cc"],
     hdrs = ["knapsack.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     deps = [
         ":big-vec",
@@ -239,6 +250,7 @@ cc_library(
     ],
     hdrs = ["vec.h"],
     copts = [
+        "-fvisibility=hidden",
         "-O3",
         "-march=native",
         "-mtune=native",
@@ -254,6 +266,7 @@ cc_library(
     name = "prng",
     srcs = ["prng.cc"],
     hdrs = ["prng.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     visibility = ["//:__subpackages__"],
     deps = [
@@ -267,6 +280,7 @@ cc_library(
     name = "big-vec",
     srcs = ["big-vec.cc"],
     hdrs = ["big-vec.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     deps = [
         "@com_google_absl//absl/base:core_headers",

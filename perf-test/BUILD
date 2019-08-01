@@ -1,6 +1,7 @@
 cc_library(
     name = "find-min-value-interface",
     hdrs = ["find-min-value.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     deps = [
         "//bench:stable-unique-ptr",
@@ -11,6 +12,7 @@ cc_library(
 cc_binary(
     name = "libbase-find-min-value.so",
     srcs = ["base-find-min-value.cc"],
+    copts = ["-fvisibility=hidden"],
     linkshared = True,
     linkstatic = True,
     deps = [
@@ -26,6 +28,7 @@ cc_binary(
         "find-min-value.cc",
         "find-min-value.h",
     ],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     deps = [
         ":libbase-find-min-value.so",

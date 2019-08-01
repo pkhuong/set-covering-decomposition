@@ -3,6 +3,7 @@
 cc_library(
     name = "stable-unique-ptr",
     hdrs = ["stable-unique-ptr.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [],
@@ -12,6 +13,7 @@ cc_library(
     name = "time",
     srcs = ["time.cc"],
     hdrs = ["time.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
@@ -25,6 +27,7 @@ cc_library(
     name = "test-params",
     srcs = ["test-params.cc"],
     hdrs = ["test-params.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
@@ -36,6 +39,7 @@ cc_library(
 cc_library(
     name = "wrap-function",
     hdrs = ["wrap-function.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [],
@@ -44,6 +48,7 @@ cc_library(
 cc_library(
     name = "timing-function",
     hdrs = ["timing-function.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
@@ -55,6 +60,7 @@ cc_library(
 cc_library(
     name = "extract-timing-function",
     hdrs = ["extract-timing-function.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
@@ -68,6 +74,7 @@ cc_library(
 cc_library(
     name = "compare-functions",
     hdrs = ["compare-functions.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
@@ -89,6 +96,7 @@ cc_library(
 cc_library(
     name = "compare-libraries",
     hdrs = ["compare-libraries.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
@@ -105,6 +113,7 @@ cc_library(
     name = "sign-test",
     srcs = ["sign-test.cc"],
     hdrs = ["sign-test.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
@@ -118,6 +127,7 @@ cc_library(
     name = "quantile-test",
     srcs = ["quantile-test.cc"],
     hdrs = ["quantile-test.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
@@ -133,6 +143,7 @@ cc_library(
     name = "bounded-mean-test",
     srcs = ["bounded-mean-test.cc"],
     hdrs = ["bounded-mean-test.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
@@ -147,6 +158,7 @@ cc_library(
     name = "kolmogorov-smirnov-test",
     srcs = ["kolmogorov-smirnov-test.cc"],
     hdrs = ["kolmogorov-smirnov-test.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     visibility = ["//visibility:public"],
     deps = [
@@ -316,6 +328,7 @@ cc_test(
 cc_binary(
     name = "libbadnop.so",
     srcs = ["badnop.cc"],
+    copts = ["-fvisibility=hidden"],
     linkshared = True,
     linkstatic = True,
     visibility = ["//visibility:private"],
@@ -327,6 +340,7 @@ cc_binary(
 cc_binary(
     name = "libfastnop.so",
     srcs = ["fastnop.cc"],
+    copts = ["-fvisibility=hidden"],
     # We want a self-contained .so
     linkshared = True,
     linkstatic = True,
@@ -339,6 +353,7 @@ cc_binary(
 cc_binary(
     name = "libslownop.so",
     srcs = ["slownop.cc"],
+    copts = ["-fvisibility=hidden"],
     linkshared = True,
     linkstatic = True,
     visibility = ["//visibility:private"],
@@ -351,6 +366,7 @@ cc_binary(
 cc_library(
     name = "constructable-array",
     hdrs = ["internal/constructable-array.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     visibility = ["//visibility:private"],
     deps = [],
@@ -370,6 +386,7 @@ cc_test(
 cc_library(
     name = "meta",
     hdrs = ["internal/meta.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     visibility = ["//visibility:private"],
     deps = [
@@ -391,7 +408,7 @@ cc_library(
             "-D_GNU_SOURCE",
             "-DDLMOPEN_AVAILABLE",
         ],
-    }),
+    }) + ["-fvisibility=hidden"],
     linkopts = ["-ldl"],
     linkstatic = True,
     visibility = ["//visibility:private"],
@@ -406,6 +423,7 @@ cc_library(
     name = "pooled-thread",
     srcs = ["internal/pooled-thread.cc"],
     hdrs = ["internal/pooled-thread.h"],
+    copts = ["-fvisibility=hidden"],
     linkstatic = True,
     visibility = ["//visibility:private"],
     deps = [
