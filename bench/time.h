@@ -73,7 +73,7 @@ inline uint64_t GetTicksBeginWithBarrier(const T& x) {
       "cpuid\n\t"
       "rdtsc"
       : "=a"(lo), "=d"(hi)
-      : "X"(x)
+      : "r"(&x)
       : "%rbx", "%rcx", "memory", "cc");
 
   return (static_cast<uint64_t>(hi) << 32) | lo;
