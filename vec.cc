@@ -12,6 +12,7 @@ namespace internal {
 namespace {
 using v4sf = __m128;
 using v4df = __m256d;
+using v4i = __m256i;
 
 constexpr size_t kChunkSize = 8;
 
@@ -93,14 +94,51 @@ double ApplyHedgeLoss(absl::Span<const double> losses, double min_loss,
 }
 
 std::pair<size_t, double> FindMinValue(absl::Span<const double> xs) {
-  size_t index = 0;
-  double min_val = xs[0];
+  size_t index, i = 4, n;
+  double min_val;
+  double vals_array[4];
+  size_t indices_array[4];
 
-  // XXX vectorize.
-  for (size_t i = 1, n = xs.size(); i < n; ++i) {
-    const double val_i = xs[i];
-    index = (val_i < min_val) ? i : index;
-    min_val = (val_i < min_val) ? val_i : min_val;
+  n = xs.size();
+
+  if (n < 4) {
+    index = 0;
+    min_val = xs[0];
+  } else {
+    const v4i increment = _mm256_set1_epi64x(4);
+    v4i indices = _mm256_setr_epi64x(0, 1, 2, 3);
+    v4i min_indices = indices;
+    v4df min_vals = _mm256_loadu_pd(xs.data());
+
+    for (; i < n; i +=4) {
+      indices = _mm256_add_epi64(indices, increment);
+      const v4df vals_i = _mm256_loadu_pd(xs.data() + i);
+      v4i lt = _mm256_castpd_si256(_mm256_cmp_pd(vals_i, min_vals, _CMP_LT_OS));
+      min_indices = _mm256_blendv_epi8(min_indices, indices, lt);
+      min_vals = _mm256_min_pd(vals_i, min_vals);
+    }
+
+    _mm256_storeu_pd(vals_array, min_vals);
+    _mm256_storeu_si256((v4i *)indices_array, min_indices);
+
+    min_val = vals_array[0];
+    index = indices_array[0];
+
+    for (size_t j = 0; j < 4; j++) {
+      const double val_j = vals_array[j];
+      index = (val_j < min_val) ? j : index;
+      min_val = (val_j < min_val) ? val_j : min_val;
+    }
+  }
+
+  if (i > n) {
+    i -= 4;
+
+    for (; i < n; i++) {
+      const double val_i = xs[i];
+      index = (val_i < min_val) ? i : index;
+      min_val = (val_i < min_val) ? val_i : min_val;
+    }
   }
 
   return std::make_pair(index, min_val);
